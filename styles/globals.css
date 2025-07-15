@@ -453,6 +453,16 @@ body {
     transparent 4px
   );
   mix-blend-mode: lighten;
+  opacity: 0.18;
+  animation: scanline-flicker 1.5s infinite alternate;
+}
+@keyframes scanline-flicker {
+  0% {
+    opacity: 0.18;
+  }
+  100% {
+    opacity: 0.28;
+  }
 }
 .terminal-auth-content form {
   display: flex;
@@ -492,12 +502,17 @@ body {
   padding: 0.5rem 1.5rem;
   border-radius: 4px;
   cursor: pointer;
-  box-shadow: 0 0 8px var(--blue);
-  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 0 12px var(--blue), 0 0 0 2px var(--blue) inset;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 .terminal-btn:hover {
   background: var(--lavender);
   color: var(--blue);
+}
+.terminal-btn:active {
+  background: var(--surface0);
+  color: var(--blue);
+  box-shadow: 0 0 16px var(--lavender);
 }
 .terminal-cursor {
   display: inline-block;
@@ -609,6 +624,16 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  border: 2px solid var(--blue);
+  animation: crt-glow 2.5s infinite alternate;
+}
+@keyframes crt-glow {
+  0% {
+    box-shadow: 0 0 32px var(--blue), 0 0 0 4px #222 inset;
+  }
+  100% {
+    box-shadow: 0 0 48px var(--lavender), 0 0 0 4px #222 inset;
+  }
 }
 
 .terminal-auth-form-area form {
@@ -638,6 +663,10 @@ body {
   box-shadow: 0 0 12px var(--blue) 33;
   transition: border 0.2s, box-shadow 0.2s;
 }
+.terminal-input:focus {
+  border: 2px solid var(--green);
+  box-shadow: 0 0 16px var(--green);
+}
 
 .terminal-btn {
   background: var(--blue);
@@ -652,11 +681,22 @@ body {
   box-shadow: 0 0 12px var(--blue);
   transition: background 0.2s, color 0.2s;
   margin-bottom: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 12px var(--blue), 0 0 0 2px var(--blue) inset;
 }
-
 .terminal-btn:hover {
   background: var(--lavender);
   color: var(--blue);
+}
+.terminal-btn:active {
+  background: var(--surface0);
+  color: var(--blue);
+  box-shadow: 0 0 16px var(--lavender);
+}
+.terminal-btn .terminal-cursor {
+  animation: blink-cursor 0.7s steps(2, start) infinite;
 }
 
 .terminal-cursor {
@@ -677,6 +717,68 @@ body {
   font-family: inherit;
   border-radius: 6px;
   box-shadow: 0 0 12px var(--red) 33;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  animation: tui-fade-in 0.3s;
+}
+.terminal-error::before {
+  content: "✖";
+  color: var(--red);
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.terminal-success {
+  color: var(--green);
+  background: var(--mantle);
+  border-left: 3px solid var(--green);
+  padding: 0.7rem 1.2rem;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  font-family: inherit;
+  border-radius: 6px;
+  box-shadow: 0 0 12px var(--green) 33;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  animation: tui-fade-in 0.3s;
+}
+.terminal-success::before {
+  content: "✔";
+  color: var(--green);
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.terminal-loading {
+  color: var(--blue);
+  font-family: inherit;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+.terminal-loading::after {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  border: 2.5px solid var(--blue);
+  border-top: 2.5px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 0.5em;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .terminal-link {

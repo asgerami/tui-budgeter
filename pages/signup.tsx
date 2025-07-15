@@ -22,6 +22,24 @@ export default function SignUp() {
 
   const provider = new GoogleAuthProvider();
 
+  const getFriendlyError = (err: any) => {
+    if (!err || !err.code) return err.message || "An unknown error occurred.";
+    switch (err.code) {
+      case "auth/email-already-in-use":
+        return "An account with this email already exists.";
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/weak-password":
+        return "Password is too weak. Please use at least 6 characters.";
+      case "auth/network-request-failed":
+        return "Network error. Please check your connection.";
+      case "auth/popup-closed-by-user":
+        return "Google sign-up was cancelled.";
+      default:
+        return err.message || "An error occurred. Please try again.";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
@@ -43,7 +61,7 @@ export default function SignUp() {
       );
       setTimeout(() => router.push("/signin"), 2500);
     } catch (err: any) {
-      setError(err.message || "Failed to create account");
+      setError(getFriendlyError(err));
     }
   };
 
@@ -52,10 +70,10 @@ export default function SignUp() {
     setSuccess("");
     try {
       const result = await signInWithPopup(auth, provider);
-      // No need to check emailVerified for Google accounts
-      router.push("/");
+      setSuccess("Signed up with Google! Redirecting...");
+      setTimeout(() => router.push("/"), 1500);
     } catch (err: any) {
-      setError(err.message || "Failed to sign up with Google");
+      setError(getFriendlyError(err));
     }
   };
 
@@ -116,9 +134,7 @@ export default function SignUp() {
             <span className="terminal-cursor">█</span>
           </button>
           {error && <div className="terminal-error">{error}</div>}
-          {success && (
-            <div style={{ color: "#00ff99", marginTop: 8 }}>{success}</div>
-          )}
+          {success && <div className="terminal-success">{success}</div>}
           <div style={{ marginTop: "1rem", textAlign: "center" }}>
             <a className="terminal-link" href="/signin">
               Already have an account? Sign in

@@ -17,6 +17,26 @@ export default function SignIn() {
 
   const provider = new GoogleAuthProvider();
 
+  const getFriendlyError = (err: any) => {
+    if (!err || !err.code) return err.message || "An unknown error occurred.";
+    switch (err.code) {
+      case "auth/user-not-found":
+        return "No account found with this email.";
+      case "auth/wrong-password":
+        return "Incorrect password. Please try again.";
+      case "auth/invalid-credential":
+        return "Invalid credentials. Please check your email and password and try again.";
+      case "auth/too-many-requests":
+        return "Too many attempts. Please wait and try again.";
+      case "auth/popup-closed-by-user":
+        return "Google sign-in was cancelled.";
+      case "auth/network-request-failed":
+        return "Network error. Please check your connection.";
+      default:
+        return "Authentication failed. Please try again or reset your password.";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
@@ -32,7 +52,7 @@ export default function SignIn() {
       }
       router.push("/");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in");
+      setError(getFriendlyError(err));
     }
   };
 
@@ -50,7 +70,7 @@ export default function SignIn() {
       }
       router.push("/");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in with Google");
+      setError(getFriendlyError(err));
     }
   };
 

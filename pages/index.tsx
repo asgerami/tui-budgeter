@@ -20,6 +20,7 @@ export default function Home() {
   const [notification, setNotification] = useState<string>("");
   const [migrated, setMigrated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Helper to get the current user's ID token and build headers
   const getAuthHeaders = async (contentType = false) => {
@@ -97,6 +98,7 @@ export default function Home() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
+      setLoadingAuth(false);
       if (firebaseUser) {
         fetchTransactions();
       } else {
@@ -290,7 +292,9 @@ export default function Home() {
             </div>
           )}
           <div style={{ marginTop: 8, textAlign: "right" }}>
-            {user ? (
+            {loadingAuth ? (
+              <span className="terminal-loading">Loading...</span>
+            ) : user ? (
               <button
                 className="tui-button tui-button-danger"
                 onClick={async () => {
@@ -318,38 +322,47 @@ export default function Home() {
         </header>
 
         {/* Navigation */}
-        <nav className="tui-panel">
+        {loadingAuth ? (
           <div
-            style={{ display: "flex", gap: "1rem", justifyContent: "center" }}
+            className="terminal-loading"
+            style={{ textAlign: "center", margin: "2rem 0" }}
           >
-            <button
-              className={`tui-button ${
-                currentView === "dashboard" ? "tui-button-success" : ""
-              }`}
-              onClick={() => setCurrentView("dashboard")}
-            >
-              📊 Dashboard [H]
-            </button>
-            <button
-              className={`tui-button ${
-                currentView === "add" ? "tui-button-success" : ""
-              }`}
-              onClick={() => setCurrentView("add")}
-              disabled={!user}
-            >
-              ➕ Add Transaction [A]
-            </button>
-            <button
-              className={`tui-button ${
-                currentView === "transactions" ? "tui-button-success" : ""
-              }`}
-              onClick={() => setCurrentView("transactions")}
-              disabled={!user}
-            >
-              📋 Transactions [T]
-            </button>
+            Loading...
           </div>
-        </nav>
+        ) : (
+          <nav className="tui-panel">
+            <div
+              style={{ display: "flex", gap: "1rem", justifyContent: "center" }}
+            >
+              <button
+                className={`tui-button ${
+                  currentView === "dashboard" ? "tui-button-success" : ""
+                }`}
+                onClick={() => setCurrentView("dashboard")}
+              >
+                📊 Dashboard [H]
+              </button>
+              <button
+                className={`tui-button ${
+                  currentView === "add" ? "tui-button-success" : ""
+                }`}
+                onClick={() => setCurrentView("add")}
+                disabled={!user}
+              >
+                ➕ Add Transaction [A]
+              </button>
+              <button
+                className={`tui-button ${
+                  currentView === "transactions" ? "tui-button-success" : ""
+                }`}
+                onClick={() => setCurrentView("transactions")}
+                disabled={!user}
+              >
+                📋 Transactions [T]
+              </button>
+            </div>
+          </nav>
+        )}
 
         {/* Main Content */}
         <main className="dashboard-grid">
@@ -379,16 +392,22 @@ export default function Home() {
             {currentView !== "dashboard" && !user && (
               <div style={{ marginTop: 32, textAlign: "center" }}>
                 <p>Please sign in to access this feature.</p>
-                <a
-                  className="tui-button"
-                  href="/signin"
-                  style={{ marginRight: 8 }}
+                <div
+                  style={{
+                    marginTop: 16,
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
                 >
-                  Sign In
-                </a>
-                <a className="tui-button tui-button-success" href="/signup">
-                  Sign Up
-                </a>
+                  <a className="tui-button" href="/signin">
+                    Sign In
+                  </a>
+                  <a className="tui-button tui-button-success" href="/signup">
+                    Sign Up
+                  </a>
+                </div>
               </div>
             )}
           </div>
@@ -433,10 +452,12 @@ export default function Home() {
         </main>
 
         {/* Status Bar */}
-        <StatusBar
-          transactions={transactions}
-          currentBalance={currentBalance}
-        />
+        {!loadingAuth && (
+          <StatusBar
+            transactions={transactions}
+            currentBalance={currentBalance}
+          />
+        )}
       </div>
     </>
   );
