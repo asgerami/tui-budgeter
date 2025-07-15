@@ -8,30 +8,10 @@ export default function TerminalAuthLayout({
   title: string;
 }) {
   return (
-    <div className="terminal-auth-bg">
-      <div className="terminal-auth-window">
-        <div className="terminal-auth-header">
-          <pre className="terminal-ascii-art">{`
-
-
-                ████████╗██╗░░░██╗██╗
-                ╚══██╔══╝██║░░░██║██║
-                ░░░██║░░░██║░░░██║██║
-                ░░░██║░░░██║░░░██║██║
-                ░░░██║░░░╚██████╔╝██║
-                ░░░╚═╝░░░░╚═════╝░╚═╝
-
-██████╗░██╗░░░██╗██████╗░░██████╗░███████╗████████╗███████╗██████╗░
-██╔══██╗██║░░░██║██╔══██╗██╔════╝░██╔════╝╚══██╔══╝██╔════╝██╔══██╗
-██████╦╝██║░░░██║██║░░██║██║░░██╗░█████╗░░░░░██║░░░█████╗░░██████╔╝
-██╔══██╗██║░░░██║██║░░██║██║░░╚██╗██╔══╝░░░░░██║░░░██╔══╝░░██╔══██╗
-██████╦╝╚██████╔╝██████╔╝╚██████╔╝███████╗░░░██║░░░███████╗██║░░██║
-╚═════╝░░╚═════╝░╚═════╝░░╚═════╝░╚══════╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝
-
-`}</pre>
-          <div className="terminal-title">{title}</div>
-        </div>
-        <div className="terminal-auth-content">{children}</div>
+    <div className="terminal-auth-fullscreen">
+      <div className="terminal-auth-content-area">
+        <div className="terminal-title-large">{title}</div>
+        <div className="terminal-auth-form-area">{children}</div>
       </div>
       <div className="terminal-scanlines" />
     </div>
