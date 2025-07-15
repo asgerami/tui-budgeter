@@ -6,6 +6,8 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { auth } from "../utils/firebaseClient";
 
@@ -17,6 +19,8 @@ export default function SignUp() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const router = useRouter();
+
+  const provider = new GoogleAuthProvider();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,6 +44,18 @@ export default function SignUp() {
       setTimeout(() => router.push("/signin"), 2500);
     } catch (err: any) {
       setError(err.message || "Failed to create account");
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setError("");
+    setSuccess("");
+    try {
+      const result = await signInWithPopup(auth, provider);
+      // No need to check emailVerified for Google accounts
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message || "Failed to sign up with Google");
     }
   };
 
@@ -109,6 +125,15 @@ export default function SignUp() {
             </a>
           </div>
         </form>
+        <button
+          type="button"
+          className="terminal-btn"
+          style={{ marginTop: "1rem", background: "#4285F4", color: "#fff" }}
+          onClick={handleGoogleSignUp}
+        >
+          <span>&gt; Sign up with Google</span>
+          <span className="terminal-cursor">█</span>
+        </button>
       </TerminalAuthLayout>
     </>
   );

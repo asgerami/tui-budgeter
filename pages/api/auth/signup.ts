@@ -2,8 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "../../../utils/mongodb";
 import { hash } from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
-import { setUserVerificationToken } from "../../../utils/mongodb";
-import sendMail from "../../../utils/sendMail";
 
 export default async function handler(
   req: NextApiRequest,
@@ -35,14 +33,6 @@ export default async function handler(
       verificationTokenExpiry,
     });
     // Send verification email
-    await sendMail({
-      to: email,
-      subject: "Verify your email",
-      html: `<p>Welcome to TUI Budgeter!</p><p>Click <a href="${process.env.NEXTAUTH_URL}/api/auth/verify?token=${verificationToken}">here</a> to verify your email address.</p>`,
-    });
-    return res.status(201).json({
-      message: "User created. Please check your email to verify your account.",
-    });
   } catch (err) {
     console.error("Signup error:", err);
     return res.status(500).json({ error: "Internal server error" });
