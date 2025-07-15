@@ -4,18 +4,27 @@ import {
   deleteRecurringTransaction,
   getRecurringTransactions,
 } from "../../../utils/mongodb";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]";
+import { verifyIdToken } from "../../../utils/firebaseAdmin";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.email) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  const userId = session.user.email;
+  const idToken = authHeader.split(" ")[1];
+  let decoded;
+  try {
+    decoded = await verifyIdToken(idToken);
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+  const userId = decoded.email;
+  if (!userId) {
+    return res.status(401).json({ error: "Invalid user" });
+  }
   const { id } = req.query;
   if (!id || typeof id !== "string") {
     return res.status(400).json({ error: "Missing id" });

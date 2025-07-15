@@ -22,8 +22,7 @@ if (!global._mongoClientPromise) {
 }
 clientPromise = global._mongoClientPromise!;
 
-import { RecurringTransaction } from "../types";
-import { Transaction } from "../types";
+import { RecurringTransaction, Transaction } from "../types";
 
 export async function getRecurringTransactionsCollection() {
   const client = await clientPromise;
@@ -80,6 +79,73 @@ export async function updateTransaction(
 export async function deleteTransaction(id: string, userId: string) {
   const col = await getTransactionsCollection();
   return col.deleteOne({ id, userId });
+}
+
+export async function getUsersCollection() {
+  const client = await clientPromise;
+  return client.db().collection("users");
+}
+
+export async function setUserVerificationToken(
+  email: string,
+  token: string,
+  expiry: Date
+) {
+  const col = await getUsersCollection();
+  return col.updateOne(
+    { email },
+    {
+      $set: {
+        verificationToken: token,
+        verificationTokenExpiry: expiry,
+        verified: false,
+      },
+    }
+  );
+}
+
+export async function verifyUserByToken(token: string) {
+  const col = await getUsersCollection();
+  const user = await col.findOne({ verificationToken: token });
+  if (!user) return null;
+  if (user.verificationTokenExpiry && user.verificationTokenExpiry < new Date())
+    return null;
+  await col.updateOne(
+    { email: user.email },
+    {
+      $set: { verified: true },
+      $unset: { verificationToken: "", verificationTokenExpiry: "" },
+    }
+  );
+  return user;
+}
+
+export async function setUserResetToken(
+  email: string,
+  token: string,
+  expiry: Date
+) {
+  const col = await getUsersCollection();
+  return col.updateOne(
+    { email },
+    { $set: { resetToken: token, resetTokenExpiry: expiry } }
+  );
+}
+
+export async function getUserByResetToken(token: string) {
+  const col = await getUsersCollection();
+  const user = await col.findOne({ resetToken: token });
+  if (!user) return null;
+  if (user.resetTokenExpiry && user.resetTokenExpiry < new Date()) return null;
+  return user;
+}
+
+export async function clearUserResetToken(email: string) {
+  const col = await getUsersCollection();
+  return col.updateOne(
+    { email },
+    { $unset: { resetToken: "", resetTokenExpiry: "" } }
+  );
 }
 
 export default clientPromise;

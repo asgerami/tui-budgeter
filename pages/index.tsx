@@ -2,13 +2,13 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { Transaction } from "../types";
-// import { StorageService } from "../utils/storage"; // REMOVE
 import TransactionForm from "../components/TransactionForm";
 import TransactionTable from "../components/TransactionTable";
 import Dashboard from "../components/Dashboard";
 import StatusBar from "../components/StatusBar";
 import CommandInput from "../components/CommandInput";
-import { getSession } from "next-auth/react";
+import { auth } from "../utils/firebaseClient";
+import { getIdToken, onAuthStateChanged, signOut, User } from "firebase/auth";
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -19,43 +19,31 @@ export default function Home() {
   >("dashboard");
   const [notification, setNotification] = useState<string>("");
   const [migrated, setMigrated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  // Helper to get the current user's ID token and build headers
+  const getAuthHeaders = async (contentType = false) => {
+    const user = auth.currentUser;
+    let headers: Record<string, string> = {};
+    if (contentType) headers["Content-Type"] = "application/json";
+    if (user) {
+      const token = await getIdToken(user);
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  };
 
   // Fetch transactions from API
   const fetchTransactions = async () => {
-    const res = await fetch("/api/transactions");
+    const headers = await getAuthHeaders();
+    const res = await fetch("/api/transactions", { headers });
     if (res.ok) {
       const data = await res.json();
       setTransactions(data);
     }
   };
 
-  // Migrate localStorage transactions to DB on first login
-  useEffect(() => {
-    const migrateLocalTransactions = async () => {
-      if (typeof window === "undefined" || migrated) return;
-      const local = localStorage.getItem("tui-budgeter-transactions");
-      if (local) {
-        try {
-          const txs: Transaction[] = JSON.parse(local);
-          for (const tx of txs) {
-            // Try to add each transaction to the DB
-            await fetch("/api/transactions", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(tx),
-            });
-          }
-          localStorage.removeItem("tui-budgeter-transactions");
-          setMigrated(true);
-        } catch (e) {
-          // ignore
-        }
-      } else {
-        setMigrated(true);
-      }
-    };
-    migrateLocalTransactions().then(fetchTransactions);
-  }, [migrated]);
+  // Remove all code related to localStorage migration, StorageService, and NextAuth session logic.
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -106,15 +94,32 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        fetchTransactions();
+      } else {
+        setTransactions([]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const showNotification = (message: string) => {
     setNotification(message);
     setTimeout(() => setNotification(""), 3000);
   };
 
   const handleAddTransaction = async (transaction: Transaction) => {
+    if (!user) {
+      showNotification("Please sign in to add transactions.");
+      return;
+    }
+    const headers = await getAuthHeaders(true);
     await fetch("/api/transactions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(transaction),
     });
     fetchTransactions();
@@ -123,14 +128,23 @@ export default function Home() {
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
+    if (!user) {
+      showNotification("Please sign in to edit transactions.");
+      return;
+    }
     setEditingTransaction(transaction);
     setCurrentView("add");
   };
 
   const handleUpdateTransaction = async (transaction: Transaction) => {
+    if (!user) {
+      showNotification("Please sign in to update transactions.");
+      return;
+    }
+    const headers = await getAuthHeaders(true);
     await fetch(`/api/transactions/${transaction.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(transaction),
     });
     fetchTransactions();
@@ -140,21 +154,34 @@ export default function Home() {
   };
 
   const handleDeleteTransaction = async (id: string) => {
+    if (!user) {
+      showNotification("Please sign in to delete transactions.");
+      return;
+    }
     if (confirm("Are you sure you want to delete this transaction?")) {
-      await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+      const headers = await getAuthHeaders();
+      await fetch(`/api/transactions/${id}`, { method: "DELETE", headers });
       fetchTransactions();
       showNotification("Transaction deleted successfully!");
     }
   };
 
   const handleClearAll = async () => {
+    if (!user) {
+      showNotification("Please sign in to clear transactions.");
+      return;
+    }
     if (
       confirm(
         "Are you sure you want to clear all transactions? This action cannot be undone."
       )
     ) {
+      const headers = await getAuthHeaders();
       for (const tx of transactions) {
-        await fetch(`/api/transactions/${tx.id}`, { method: "DELETE" });
+        await fetch(`/api/transactions/${tx.id}`, {
+          method: "DELETE",
+          headers,
+        });
       }
       fetchTransactions();
       showNotification("All transactions cleared!");
@@ -203,6 +230,10 @@ export default function Home() {
   };
 
   const handleExport = () => {
+    if (!user) {
+      showNotification("Please sign in to export transactions.");
+      return;
+    }
     if (transactions.length === 0) {
       showNotification("No transactions to export");
       return;
@@ -258,6 +289,32 @@ export default function Home() {
               <span className="tui-blink">█</span>
             </div>
           )}
+          <div style={{ marginTop: 8, textAlign: "right" }}>
+            {user ? (
+              <button
+                className="tui-button tui-button-danger"
+                onClick={async () => {
+                  await signOut(auth);
+                  setNotification("Logged out successfully.");
+                }}
+              >
+                Log Out
+              </button>
+            ) : (
+              <>
+                <a
+                  className="tui-button"
+                  href="/signin"
+                  style={{ marginRight: 8 }}
+                >
+                  Sign In
+                </a>
+                <a className="tui-button tui-button-success" href="/signup">
+                  Sign Up
+                </a>
+              </>
+            )}
+          </div>
         </header>
 
         {/* Navigation */}
@@ -278,6 +335,7 @@ export default function Home() {
                 currentView === "add" ? "tui-button-success" : ""
               }`}
               onClick={() => setCurrentView("add")}
+              disabled={!user}
             >
               ➕ Add Transaction [A]
             </button>
@@ -286,6 +344,7 @@ export default function Home() {
                 currentView === "transactions" ? "tui-button-success" : ""
               }`}
               onClick={() => setCurrentView("transactions")}
+              disabled={!user}
             >
               📋 Transactions [T]
             </button>
@@ -295,7 +354,7 @@ export default function Home() {
         {/* Main Content */}
         <main className="dashboard-grid">
           <div className="left-panel">
-            {currentView === "add" && (
+            {currentView === "add" && user && (
               <TransactionForm
                 onSubmit={handleAddTransaction}
                 editingTransaction={editingTransaction ?? undefined}
@@ -310,12 +369,27 @@ export default function Home() {
               <Dashboard transactions={transactions} />
             )}
 
-            {currentView === "transactions" && (
+            {currentView === "transactions" && user && (
               <TransactionTable
                 transactions={transactions}
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
               />
+            )}
+            {currentView !== "dashboard" && !user && (
+              <div style={{ marginTop: 32, textAlign: "center" }}>
+                <p>Please sign in to access this feature.</p>
+                <a
+                  className="tui-button"
+                  href="/signin"
+                  style={{ marginRight: 8 }}
+                >
+                  Sign In
+                </a>
+                <a className="tui-button tui-button-success" href="/signup">
+                  Sign Up
+                </a>
+              </div>
             )}
           </div>
 
@@ -335,20 +409,21 @@ export default function Home() {
                 <button
                   className="tui-button tui-button-success"
                   onClick={() => setCurrentView("add")}
+                  disabled={!user}
                 >
                   ➕ Add Transaction
                 </button>
                 <button
                   className="tui-button"
                   onClick={handleExport}
-                  disabled={transactions.length === 0}
+                  disabled={transactions.length === 0 || !user}
                 >
                   📥 Export CSV
                 </button>
                 <button
                   className="tui-button tui-button-danger"
                   onClick={handleClearAll}
-                  disabled={transactions.length === 0}
+                  disabled={transactions.length === 0 || !user}
                 >
                   🗑️ Clear All
                 </button>
@@ -368,14 +443,6 @@ export default function Home() {
 }
 
 export async function getServerSideProps(context: any) {
-  const session = await getSession(context);
-  if (!session) {
-    return {
-      redirect: {
-        destination: "/signin",
-        permanent: false,
-      },
-    };
-  }
+  // Remove all code related to NextAuth session logic.
   return { props: {} };
 }

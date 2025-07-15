@@ -2,6 +2,12 @@ import React, { useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import TerminalAuthLayout from "../components/TerminalAuthLayout";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile,
+} from "firebase/auth";
+import { auth } from "../utils/firebaseClient";
 
 export default function SignUp() {
   const [name, setName] = useState("");
@@ -20,16 +26,20 @@ export default function SignUp() {
       setError("Passwords do not match");
       return;
     }
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-    const data = await res.json();
-    if (data.error) setError(data.error);
-    else {
-      setSuccess("Account created! Redirecting to sign in...");
-      setTimeout(() => router.push("/signin"), 1500);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      await updateProfile(userCredential.user, { displayName: name });
+      await sendEmailVerification(userCredential.user);
+      setSuccess(
+        "Account created! Please check your email to verify your account."
+      );
+      setTimeout(() => router.push("/signin"), 2500);
+    } catch (err: any) {
+      setError(err.message || "Failed to create account");
     }
   };
 

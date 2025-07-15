@@ -2,18 +2,27 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createTransaction, getTransactions } from "../../../utils/mongodb";
 import { Transaction } from "../../../types";
 import { v4 as uuidv4 } from "uuid";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]";
+import { verifyIdToken } from "../../../utils/firebaseAdmin";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.email) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  const userId = session.user.email;
+  const idToken = authHeader.split(" ")[1];
+  let decoded;
+  try {
+    decoded = await verifyIdToken(idToken);
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+  const userId = decoded.email;
+  if (!userId) {
+    return res.status(401).json({ error: "Invalid user" });
+  }
 
   if (req.method === "GET") {
     const txs = await getTransactions(userId);

@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { signIn } from "next-auth/react";
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+import { auth } from "../utils/firebaseClient";
 import Head from "next/head";
 import TerminalAuthLayout from "../components/TerminalAuthLayout";
 import { useRouter } from "next/router";
@@ -10,16 +15,43 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const provider = new GoogleAuthProvider();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-    if (res?.error) setError(res.error);
-    if (res?.ok) router.push("/");
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      if (!userCredential.user.emailVerified) {
+        setError("Please verify your email before logging in.");
+        return;
+      }
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in");
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    try {
+      const result = await signInWithPopup(auth, provider);
+      // Only check emailVerified for password users
+      if (
+        !result.user.emailVerified &&
+        result.user.providerData[0]?.providerId === "password"
+      ) {
+        setError("Please verify your email before logging in.");
+        return;
+      }
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in with Google");
+    }
   };
 
   return (
@@ -63,6 +95,15 @@ export default function SignIn() {
             </a>
           </div>
         </form>
+        <button
+          type="button"
+          className="terminal-btn"
+          style={{ marginTop: "1rem", background: "#4285F4", color: "#fff" }}
+          onClick={handleGoogleSignIn}
+        >
+          <span>&gt; Sign in with Google</span>
+          <span className="terminal-cursor">█</span>
+        </button>
       </TerminalAuthLayout>
     </>
   );
