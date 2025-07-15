@@ -1,7 +1,6 @@
-// components/TransactionForm.tsx
-import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { Transaction, TransactionFormData } from '../types';
+import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { Transaction, TransactionFormData } from "../types";
 
 interface TransactionFormProps {
   onSubmit: (transaction: Transaction) => void;
@@ -10,43 +9,81 @@ interface TransactionFormProps {
 }
 
 const CATEGORIES = {
-  income: ['Salary', 'Freelance', 'Investment', 'Gift', 'Other Income'],
-  expense: ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Education', 'Other Expense']
+  income: ["Salary", "Freelance", "Investment", "Gift", "Other Income"],
+  expense: [
+    "Food",
+    "Transport",
+    "Entertainment",
+    "Shopping",
+    "Bills",
+    "Healthcare",
+    "Education",
+    "Other Expense",
+  ],
 };
 
-export default function TransactionForm({ onSubmit, editingTransaction, onCancel }: TransactionFormProps) {
+export default function TransactionForm({
+  onSubmit,
+  editingTransaction,
+  onCancel,
+}: TransactionFormProps) {
   const [formData, setFormData] = useState<TransactionFormData>({
-    date: editingTransaction?.date || new Date().toISOString().split('T')[0],
-    category: editingTransaction?.category || '',
-    amount: editingTransaction ? Math.abs(editingTransaction.amount).toString() : '',
-    type: editingTransaction?.type || 'expense',
-    description: editingTransaction?.description || ''
+    date: editingTransaction?.date || new Date().toISOString().split("T")[0],
+    category: editingTransaction?.category || "",
+    amount: editingTransaction
+      ? Math.abs(editingTransaction.amount).toString()
+      : "",
+    type: editingTransaction?.type || "expense",
+    description: editingTransaction?.description || "",
   });
 
   const [errors, setErrors] = useState<Partial<TransactionFormData>>({});
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDetails, setRecurringDetails] = useState({
+    frequency: "monthly",
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: "",
+  });
 
   const validateForm = (): boolean => {
     const newErrors: Partial<TransactionFormData> = {};
 
-    if (!formData.date) newErrors.date = 'Date is required';
-    if (!formData.category) newErrors.category = 'Category is required';
+    if (!formData.date) newErrors.date = "Date is required";
+    if (!formData.category) newErrors.category = "Category is required";
     if (!formData.amount) {
-      newErrors.amount = 'Amount is required';
-    } else if (isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = 'Amount must be a positive number';
+      newErrors.amount = "Amount is required";
+    } else if (
+      isNaN(parseFloat(formData.amount)) ||
+      parseFloat(formData.amount) <= 0
+    ) {
+      newErrors.amount = "Amount must be a positive number";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (
+    field: keyof TransactionFormData,
+    value: string
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleRecurringChange = (field: string, value: string) => {
+    setRecurringDetails((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     const amount = parseFloat(formData.amount);
-    const finalAmount = formData.type === 'expense' ? -amount : amount;
+    const finalAmount = formData.type === "expense" ? -amount : amount;
 
     const transaction: Transaction = {
       id: editingTransaction?.id || uuidv4(),
@@ -54,27 +91,43 @@ export default function TransactionForm({ onSubmit, editingTransaction, onCancel
       category: formData.category,
       amount: finalAmount,
       type: formData.type,
-      description: formData.description || undefined
+      description: formData.description || undefined,
     };
 
     onSubmit(transaction);
-    
+
+    if (isRecurring) {
+      await fetch("/api/recurring", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.description || formData.category,
+          amount: Math.abs(finalAmount),
+          category: formData.category,
+          type: formData.type,
+          description: formData.description,
+          startDate: recurringDetails.startDate,
+          frequency: recurringDetails.frequency,
+          endDate: recurringDetails.endDate || undefined,
+        }),
+      });
+    }
+
     // Reset form if not editing
     if (!editingTransaction) {
       setFormData({
-        date: new Date().toISOString().split('T')[0],
-        category: '',
-        amount: '',
-        type: 'expense',
-        description: ''
+        date: new Date().toISOString().split("T")[0],
+        category: "",
+        amount: "",
+        type: "expense",
+        description: "",
       });
-    }
-  };
-
-  const handleInputChange = (field: keyof TransactionFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setIsRecurring(false);
+      setRecurringDetails({
+        frequency: "monthly",
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: "",
+      });
     }
   };
 
@@ -85,9 +138,9 @@ export default function TransactionForm({ onSubmit, editingTransaction, onCancel
   return (
     <div className="tui-panel">
       <div className="tui-panel-header">
-        {editingTransaction ? '✏️ Edit Transaction' : '➕ Add New Transaction'}
+        {editingTransaction ? "✏️ Edit Transaction" : "➕ Add New Transaction"}
       </div>
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-row">
           <div className="form-group">
@@ -97,10 +150,16 @@ export default function TransactionForm({ onSubmit, editingTransaction, onCancel
               type="date"
               className="tui-input"
               value={formData.date}
-              onChange={(e) => handleInputChange('date', e.target.value)}
+              onChange={(e) => handleInputChange("date", e.target.value)}
               required
             />
-            {errors.date && <div style={{ color: 'var(--ctp-mocha-red)', fontSize: '0.8rem' }}>{errors.date}</div>}
+            {errors.date && (
+              <div
+                style={{ color: "var(--ctp-mocha-red)", fontSize: "0.8rem" }}
+              >
+                {errors.date}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -109,7 +168,7 @@ export default function TransactionForm({ onSubmit, editingTransaction, onCancel
               id="type"
               className="tui-select"
               value={formData.type}
-              onChange={(e) => handleInputChange('type', e.target.value)}
+              onChange={(e) => handleInputChange("type", e.target.value)}
             >
               <option value="expense">💸 Expense</option>
               <option value="income">💰 Income</option>
@@ -124,15 +183,23 @@ export default function TransactionForm({ onSubmit, editingTransaction, onCancel
               id="category"
               className="tui-select"
               value={formData.category}
-              onChange={(e) => handleInputChange('category', e.target.value)}
+              onChange={(e) => handleInputChange("category", e.target.value)}
               required
             >
               <option value="">Select a category</option>
-              {getCurrentCategories().map(category => (
-                <option key={category} value={category}>{category}</option>
+              {getCurrentCategories().map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
             </select>
-            {errors.category && <div style={{ color: 'var(--ctp-mocha-red)', fontSize: '0.8rem' }}>{errors.category}</div>}
+            {errors.category && (
+              <div
+                style={{ color: "var(--ctp-mocha-red)", fontSize: "0.8rem" }}
+              >
+                {errors.category}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -144,11 +211,17 @@ export default function TransactionForm({ onSubmit, editingTransaction, onCancel
               min="0"
               className="tui-input"
               value={formData.amount}
-              onChange={(e) => handleInputChange('amount', e.target.value)}
+              onChange={(e) => handleInputChange("amount", e.target.value)}
               placeholder="0.00"
               required
             />
-            {errors.amount && <div style={{ color: 'var(--ctp-mocha-red)', fontSize: '0.8rem' }}>{errors.amount}</div>}
+            {errors.amount && (
+              <div
+                style={{ color: "var(--ctp-mocha-red)", fontSize: "0.8rem" }}
+              >
+                {errors.amount}
+              </div>
+            )}
           </div>
         </div>
 
@@ -159,25 +232,74 @@ export default function TransactionForm({ onSubmit, editingTransaction, onCancel
             type="text"
             className="tui-input"
             value={formData.description}
-            onChange={(e) => handleInputChange('description', e.target.value)}
+            onChange={(e) => handleInputChange("description", e.target.value)}
             placeholder="Optional description..."
           />
         </div>
-
+        <div className="form-group" style={{ marginTop: "1rem" }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              style={{ marginRight: "0.5em" }}
+            />
+            Make this a recurring transaction
+          </label>
+        </div>
+        {isRecurring && (
+          <div className="form-row" style={{ marginTop: "0.5rem" }}>
+            <div className="form-group">
+              <label>Frequency</label>
+              <select
+                className="tui-select"
+                value={recurringDetails.frequency}
+                onChange={(e) =>
+                  handleRecurringChange("frequency", e.target.value)
+                }
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Start Date</label>
+              <input
+                type="date"
+                className="tui-input"
+                value={recurringDetails.startDate}
+                onChange={(e) =>
+                  handleRecurringChange("startDate", e.target.value)
+                }
+              />
+            </div>
+            <div className="form-group">
+              <label>End Date (optional)</label>
+              <input
+                type="date"
+                className="tui-input"
+                value={recurringDetails.endDate}
+                onChange={(e) =>
+                  handleRecurringChange("endDate", e.target.value)
+                }
+              />
+            </div>
+          </div>
+        )}
         <div className="transaction-actions">
-          <button 
-            type="submit" 
-            className={`tui-button ${editingTransaction ? 'tui-button-success' : ''}`}
+          <button
+            type="submit"
+            className={`tui-button ${
+              editingTransaction ? "tui-button-success" : ""
+            }`}
           >
-            {editingTransaction ? '💾 Update' : '➕ Add Transaction'}
+            {editingTransaction ? "💾 Update" : "➕ Add Transaction"}
           </button>
-          
+
           {editingTransaction && onCancel && (
-            <button 
-              type="button" 
-              className="tui-button" 
-              onClick={onCancel}
-            >
+            <button type="button" className="tui-button" onClick={onCancel}>
               ❌ Cancel
             </button>
           )}
