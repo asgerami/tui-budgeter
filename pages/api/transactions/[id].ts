@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
-  updateRecurringTransaction,
-  deleteRecurringTransaction,
-  getRecurringTransactions,
+  updateTransaction,
+  deleteTransaction,
+  getTransactions,
 } from "../../../utils/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
@@ -22,28 +22,26 @@ export default async function handler(
   }
 
   if (req.method === "GET") {
-    const recs = await getRecurringTransactions(userId);
-    const rec = recs.find((r) => r.id === id);
-    if (!rec) return res.status(404).json({ error: "Not found" });
-    return res.status(200).json(rec);
+    const txs = await getTransactions(userId);
+    const tx = txs.find((t) => t.id === id);
+    if (!tx) return res.status(404).json({ error: "Not found" });
+    return res.status(200).json(tx);
   }
 
   if (req.method === "PUT") {
     const update = req.body;
-    // Only update if the recurring transaction belongs to the user
-    const recs = await getRecurringTransactions(userId);
-    const rec = recs.find((r) => r.id === id);
-    if (!rec) return res.status(404).json({ error: "Not found" });
-    await updateRecurringTransaction(id, update);
+    const txs = await getTransactions(userId);
+    const tx = txs.find((t) => t.id === id);
+    if (!tx) return res.status(404).json({ error: "Not found" });
+    await updateTransaction(id, userId, update);
     return res.status(200).json({ message: "Updated" });
   }
 
   if (req.method === "DELETE") {
-    // Only delete if the recurring transaction belongs to the user
-    const recs = await getRecurringTransactions(userId);
-    const rec = recs.find((r) => r.id === id);
-    if (!rec) return res.status(404).json({ error: "Not found" });
-    await deleteRecurringTransaction(id);
+    const txs = await getTransactions(userId);
+    const tx = txs.find((t) => t.id === id);
+    if (!tx) return res.status(404).json({ error: "Not found" });
+    await deleteTransaction(id, userId);
     return res.status(204).end();
   }
 

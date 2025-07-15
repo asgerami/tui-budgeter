@@ -206,6 +206,11 @@ body {
   background: var(--surface0);
   border-top: 1px solid var(--surface2);
   font-size: 0.9rem;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
 }
 
 .status-left {
@@ -383,5 +388,159 @@ body {
 
   .shortcuts {
     justify-content: center;
+  }
+}
+
+.terminal-auth-bg {
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.terminal-auth-window {
+  background: var(--surface0);
+  border: 2px solid var(--blue);
+  border-radius: 12px;
+  box-shadow: 0 0 32px var(--blue), 0 0 0 4px #222 inset;
+  padding: 2.5rem 2rem 2rem 2rem;
+  min-width: 340px;
+  max-width: 95vw;
+  width: 400px;
+  font-family: "Fira Mono", "Courier New", Courier, monospace;
+  color: var(--text);
+  position: relative;
+  z-index: 2;
+}
+.terminal-auth-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.terminal-ascii-art {
+  color: var(--blue);
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 0 8px var(--blue), 0 0 2px var(--blue);
+  line-height: 1.1;
+}
+.terminal-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: var(--blue);
+  text-shadow: 0 0 8px var(--blue);
+  margin-bottom: 0.5rem;
+}
+.terminal-auth-content {
+  margin-top: 1rem;
+}
+.terminal-scanlines {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--blue) 11 0px,
+    var(--blue) 11 1px,
+    transparent 1.5px,
+    transparent 4px
+  );
+  mix-blend-mode: lighten;
+}
+.terminal-auth-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.terminal-label {
+  font-size: 1rem;
+  color: var(--blue);
+  margin-bottom: 0.3rem;
+  font-family: inherit;
+  letter-spacing: 1px;
+}
+.terminal-input {
+  background: var(--mantle);
+  border: 1.5px solid var(--blue);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  outline: none;
+  box-shadow: 0 0 8px var(--blue) 33;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.terminal-input:focus {
+  border: 1.5px solid var(--lavender);
+  box-shadow: 0 0 12px var(--blue);
+}
+.terminal-btn {
+  background: var(--blue);
+  color: var(--base);
+  border: none;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--blue);
+  transition: background 0.2s, color 0.2s;
+}
+.terminal-btn:hover {
+  background: var(--lavender);
+  color: var(--blue);
+}
+.terminal-cursor {
+  display: inline-block;
+  width: 1ch;
+  animation: blink-cursor 1s steps(2, start) infinite;
+  color: var(--blue);
+  font-weight: bold;
+}
+@keyframes blink-cursor {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.terminal-error {
+  color: var(--red);
+  background: var(--mantle);
+  border-left: 3px solid var(--red);
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  border-radius: 4px;
+  box-shadow: 0 0 8px var(--red) 33;
+}
+.terminal-link {
+  color: var(--blue);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+@media (max-width: 600px) {
+  .terminal-auth-window {
+    min-width: 90vw;
+    width: 98vw;
+    padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+  }
+  .terminal-ascii-art {
+    font-size: 0.7rem;
   }
 }

@@ -23,6 +23,7 @@ if (!global._mongoClientPromise) {
 clientPromise = global._mongoClientPromise!;
 
 import { RecurringTransaction } from "../types";
+import { Transaction } from "../types";
 
 export async function getRecurringTransactionsCollection() {
   const client = await clientPromise;
@@ -50,6 +51,35 @@ export async function updateRecurringTransaction(
 export async function deleteRecurringTransaction(id: string) {
   const col = await getRecurringTransactionsCollection();
   return col.deleteOne({ id });
+}
+
+export async function getTransactionsCollection() {
+  const client = await clientPromise;
+  return client.db().collection<Transaction>("transactions");
+}
+
+export async function createTransaction(tx: Transaction & { userId: string }) {
+  const col = await getTransactionsCollection();
+  return col.insertOne(tx);
+}
+
+export async function getTransactions(userId: string) {
+  const col = await getTransactionsCollection();
+  return col.find({ userId }).toArray();
+}
+
+export async function updateTransaction(
+  id: string,
+  userId: string,
+  update: Partial<Transaction>
+) {
+  const col = await getTransactionsCollection();
+  return col.updateOne({ id, userId }, { $set: update });
+}
+
+export async function deleteTransaction(id: string, userId: string) {
+  const col = await getTransactionsCollection();
+  return col.deleteOne({ id, userId });
 }
 
 export default clientPromise;

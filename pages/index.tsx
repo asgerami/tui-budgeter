@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { Transaction } from "../types";
-import { StorageService } from "../utils/storage";
+// import { StorageService } from "../utils/storage"; // REMOVE
 import TransactionForm from "../components/TransactionForm";
 import TransactionTable from "../components/TransactionTable";
 import Dashboard from "../components/Dashboard";
@@ -18,15 +18,44 @@ export default function Home() {
     "dashboard" | "transactions" | "add"
   >("dashboard");
   const [notification, setNotification] = useState<string>("");
+  const [migrated, setMigrated] = useState(false);
 
-  // Load transactions on mount
+  // Fetch transactions from API
+  const fetchTransactions = async () => {
+    const res = await fetch("/api/transactions");
+    if (res.ok) {
+      const data = await res.json();
+      setTransactions(data);
+    }
+  };
+
+  // Migrate localStorage transactions to DB on first login
   useEffect(() => {
-    // First, generate any due recurring transactions
-    fetch("/api/recurring/generate?userId=demo-user").then(() => {
-      const loadedTransactions = StorageService.getTransactions();
-      setTransactions(loadedTransactions);
-    });
-  }, []);
+    const migrateLocalTransactions = async () => {
+      if (typeof window === "undefined" || migrated) return;
+      const local = localStorage.getItem("tui-budgeter-transactions");
+      if (local) {
+        try {
+          const txs: Transaction[] = JSON.parse(local);
+          for (const tx of txs) {
+            // Try to add each transaction to the DB
+            await fetch("/api/transactions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(tx),
+            });
+          }
+          localStorage.removeItem("tui-budgeter-transactions");
+          setMigrated(true);
+        } catch (e) {
+          // ignore
+        }
+      } else {
+        setMigrated(true);
+      }
+    };
+    migrateLocalTransactions().then(fetchTransactions);
+  }, [migrated]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -82,17 +111,14 @@ export default function Home() {
     setTimeout(() => setNotification(""), 3000);
   };
 
-  const handleAddTransaction = (transaction: Transaction) => {
-    if (editingTransaction) {
-      StorageService.updateTransaction(transaction.id, transaction);
-      setTransactions(StorageService.getTransactions());
-      setEditingTransaction(null);
-      showNotification("Transaction updated successfully!");
-    } else {
-      StorageService.saveTransaction(transaction);
-      setTransactions(StorageService.getTransactions());
-      showNotification("Transaction added successfully!");
-    }
+  const handleAddTransaction = async (transaction: Transaction) => {
+    await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(transaction),
+    });
+    fetchTransactions();
+    showNotification("Transaction added successfully!");
     setCurrentView("dashboard");
   };
 
@@ -101,30 +127,45 @@ export default function Home() {
     setCurrentView("add");
   };
 
-  const handleDeleteTransaction = (id: string) => {
+  const handleUpdateTransaction = async (transaction: Transaction) => {
+    await fetch(`/api/transactions/${transaction.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(transaction),
+    });
+    fetchTransactions();
+    setEditingTransaction(null);
+    showNotification("Transaction updated successfully!");
+    setCurrentView("dashboard");
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
     if (confirm("Are you sure you want to delete this transaction?")) {
-      StorageService.deleteTransaction(id);
-      setTransactions(StorageService.getTransactions());
+      await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+      fetchTransactions();
       showNotification("Transaction deleted successfully!");
     }
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (
       confirm(
         "Are you sure you want to clear all transactions? This action cannot be undone."
       )
     ) {
-      StorageService.clearAllTransactions();
-      setTransactions([]);
+      for (const tx of transactions) {
+        await fetch(`/api/transactions/${tx.id}`, { method: "DELETE" });
+      }
+      fetchTransactions();
       showNotification("All transactions cleared!");
     }
   };
 
   const handleLoadDemo = () => {
-    StorageService.loadDemoData();
-    setTransactions(StorageService.getTransactions());
-    showNotification("Demo data loaded!");
+    // This function is no longer needed as transactions are fetched from API
+    // StorageService.loadDemoData();
+    // setTransactions(StorageService.getTransactions());
+    showNotification("Demo data loading is no longer available.");
   };
 
   const handleCommand = (command: string) => {
@@ -248,9 +289,6 @@ export default function Home() {
             >
               📋 Transactions [T]
             </button>
-            <a href="/recurring" style={{ textDecoration: "none" }}>
-              <button className="tui-button">🔁 Recurring</button>
-            </a>
           </div>
         </nav>
 

@@ -4,6 +4,8 @@ import clientPromise, {
   updateRecurringTransaction,
 } from "../../../utils/mongodb";
 import { v4 as uuidv4 } from "uuid";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]";
 
 function getNextDate(date: Date, frequency: string | number): Date {
   const d = new Date(date);
@@ -31,8 +33,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // TODO: Replace with real user ID from session/auth
-  const userId = (req.query.userId as string) || "demo-user";
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user?.email) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const userId = session.user.email;
   const recs = await getRecurringTransactions(userId);
   const now = new Date();
   const client = await clientPromise;

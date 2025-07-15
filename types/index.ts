@@ -31,6 +31,7 @@ export interface FilterOptions {
 
 export interface RecurringTransaction {
   id: string;
+  userId: string;
   name: string;
   amount: number;
   category: string;
