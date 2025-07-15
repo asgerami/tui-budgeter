@@ -51,7 +51,7 @@ export default function CommandInput({ onCommand }: CommandInputProps) {
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Enter command (try 'help', 'add', 'clear', 'demo')"
+          placeholder="Enter command (try 'add', 'clear', 'export')"
           autoComplete="off"
           style={{ border: "none", outline: "none" }}
         />
@@ -72,9 +72,6 @@ export default function CommandInput({ onCommand }: CommandInputProps) {
         </span>
         <span className="shortcut">
           <span className="shortcut-key">h</span> Dashboard
-        </span>
-        <span className="shortcut">
-          <span className="shortcut-key">↑↓</span> History
         </span>
       </div>
 

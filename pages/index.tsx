@@ -1,5 +1,5 @@
 // pages/index.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import { Transaction } from "../types";
 import TransactionForm from "../components/TransactionForm";
@@ -9,6 +9,7 @@ import StatusBar from "../components/StatusBar";
 import CommandInput from "../components/CommandInput";
 import { auth } from "../utils/firebaseClient";
 import { getIdToken, onAuthStateChanged, signOut, User } from "firebase/auth";
+import Link from "next/link";
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -18,33 +19,64 @@ export default function Home() {
     "dashboard" | "transactions" | "add"
   >("dashboard");
   const [notification, setNotification] = useState<string>("");
-  const [migrated, setMigrated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Helper to get the current user's ID token and build headers
-  const getAuthHeaders = async (contentType = false) => {
+  const getAuthHeaders = useCallback(async (contentType = false) => {
     const user = auth.currentUser;
-    let headers: Record<string, string> = {};
+    const headers: Record<string, string> = {};
     if (contentType) headers["Content-Type"] = "application/json";
     if (user) {
       const token = await getIdToken(user);
       headers["Authorization"] = `Bearer ${token}`;
     }
     return headers;
-  };
+  }, []);
+
+  const showNotification = useCallback((message: string) => {
+    setNotification(message);
+    setTimeout(() => setNotification(""), 3000);
+  }, []);
 
   // Fetch transactions from API
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     const headers = await getAuthHeaders();
     const res = await fetch("/api/transactions", { headers });
     if (res.ok) {
       const data = await res.json();
       setTransactions(data);
     }
-  };
+  }, [getAuthHeaders]);
 
-  // Remove all code related to localStorage migration, StorageService, and NextAuth session logic.
+  const handleClearAll = useCallback(async () => {
+    if (!user) {
+      showNotification("Please sign in to clear transactions.");
+      return;
+    }
+    if (
+      confirm(
+        "Are you sure you want to clear all transactions? This action cannot be undone."
+      )
+    ) {
+      const headers = await getAuthHeaders();
+      for (const tx of transactions) {
+        await fetch(`/api/transactions/${tx.id}`, {
+          method: "DELETE",
+          headers,
+        });
+      }
+      fetchTransactions();
+      showNotification("All transactions cleared!");
+    }
+  }, [user, transactions, getAuthHeaders, fetchTransactions, showNotification]);
+
+  const handleLoadDemo = useCallback(() => {
+    // This function is no longer needed as transactions are fetched from API
+    // StorageService.loadDemoData();
+    // setTransactions(StorageService.getTransactions());
+    showNotification("Demo data loading is no longer available.");
+  }, [showNotification]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -93,7 +125,7 @@ export default function Home() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [handleClearAll, handleLoadDemo]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -106,12 +138,7 @@ export default function Home() {
       }
     });
     return () => unsubscribe();
-  }, []);
-
-  const showNotification = (message: string) => {
-    setNotification(message);
-    setTimeout(() => setNotification(""), 3000);
-  };
+  }, [fetchTransactions]);
 
   const handleAddTransaction = async (transaction: Transaction) => {
     if (!user) {
@@ -138,23 +165,6 @@ export default function Home() {
     setCurrentView("add");
   };
 
-  const handleUpdateTransaction = async (transaction: Transaction) => {
-    if (!user) {
-      showNotification("Please sign in to update transactions.");
-      return;
-    }
-    const headers = await getAuthHeaders(true);
-    await fetch(`/api/transactions/${transaction.id}`, {
-      method: "PUT",
-      headers,
-      body: JSON.stringify(transaction),
-    });
-    fetchTransactions();
-    setEditingTransaction(null);
-    showNotification("Transaction updated successfully!");
-    setCurrentView("dashboard");
-  };
-
   const handleDeleteTransaction = async (id: string) => {
     if (!user) {
       showNotification("Please sign in to delete transactions.");
@@ -166,35 +176,6 @@ export default function Home() {
       fetchTransactions();
       showNotification("Transaction deleted successfully!");
     }
-  };
-
-  const handleClearAll = async () => {
-    if (!user) {
-      showNotification("Please sign in to clear transactions.");
-      return;
-    }
-    if (
-      confirm(
-        "Are you sure you want to clear all transactions? This action cannot be undone."
-      )
-    ) {
-      const headers = await getAuthHeaders();
-      for (const tx of transactions) {
-        await fetch(`/api/transactions/${tx.id}`, {
-          method: "DELETE",
-          headers,
-        });
-      }
-      fetchTransactions();
-      showNotification("All transactions cleared!");
-    }
-  };
-
-  const handleLoadDemo = () => {
-    // This function is no longer needed as transactions are fetched from API
-    // StorageService.loadDemoData();
-    // setTransactions(StorageService.getTransactions());
-    showNotification("Demo data loading is no longer available.");
   };
 
   const handleCommand = (command: string) => {
@@ -306,16 +287,16 @@ export default function Home() {
               </button>
             ) : (
               <>
-                <a
+                <Link
                   className="tui-button"
                   href="/signin"
                   style={{ marginRight: 8 }}
                 >
                   Sign In
-                </a>
-                <a className="tui-button tui-button-success" href="/signup">
+                </Link>
+                <Link className="tui-button tui-button-success" href="/signup">
                   Sign Up
-                </a>
+                </Link>
               </>
             )}
           </div>
@@ -401,12 +382,15 @@ export default function Home() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <a className="tui-button" href="/signin">
+                  <Link className="tui-button" href="/signin">
                     Sign In
-                  </a>
-                  <a className="tui-button tui-button-success" href="/signup">
+                  </Link>
+                  <Link
+                    className="tui-button tui-button-success"
+                    href="/signup"
+                  >
                     Sign Up
-                  </a>
+                  </Link>
                 </div>
               </div>
             )}
@@ -463,7 +447,7 @@ export default function Home() {
   );
 }
 
-export async function getServerSideProps(context: any) {
+export async function getServerSideProps() {
   // Remove all code related to NextAuth session logic.
   return { props: {} };
 }

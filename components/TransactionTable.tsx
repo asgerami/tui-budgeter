@@ -314,17 +314,6 @@ export default function TransactionTable({
         </div>
       )}
 
-      <div className="shortcuts">
-        <span className="shortcut">
-          <span className="shortcut-key">Click</span> column headers to sort
-        </span>
-        <span className="shortcut">
-          <span className="shortcut-key">d</span> Delete selected
-        </span>
-        <span className="shortcut">
-          <span className="shortcut-key">e</span> Edit selected
-        </span>
-      </div>
     </div>
   );
 }

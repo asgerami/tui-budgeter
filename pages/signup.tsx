@@ -10,6 +10,8 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { auth } from "../utils/firebaseClient";
+import Link from "next/link";
+import { FirebaseError } from "firebase/app";
 
 export default function SignUp() {
   const [name, setName] = useState("");
@@ -22,22 +24,32 @@ export default function SignUp() {
 
   const provider = new GoogleAuthProvider();
 
-  const getFriendlyError = (err: any) => {
-    if (!err || !err.code) return err.message || "An unknown error occurred.";
-    switch (err.code) {
-      case "auth/email-already-in-use":
-        return "An account with this email already exists.";
-      case "auth/invalid-email":
-        return "Please enter a valid email address.";
-      case "auth/weak-password":
-        return "Password is too weak. Please use at least 6 characters.";
-      case "auth/network-request-failed":
-        return "Network error. Please check your connection.";
-      case "auth/popup-closed-by-user":
-        return "Google sign-up was cancelled.";
-      default:
-        return err.message || "An error occurred. Please try again.";
+  const getFriendlyError = (err: unknown) => {
+    if (err instanceof FirebaseError) {
+      switch (err.code) {
+        case "auth/email-already-in-use":
+          return "An account with this email already exists.";
+        case "auth/invalid-email":
+          return "Please enter a valid email address.";
+        case "auth/weak-password":
+          return "Password is too weak. Please use at least 6 characters.";
+        case "auth/network-request-failed":
+          return "Network error. Please check your connection.";
+        case "auth/popup-closed-by-user":
+          return "Google sign-up was cancelled.";
+        default:
+          return (
+            (err as { message?: string }).message ||
+            "An error occurred. Please try again."
+          );
+      }
     }
+    if (typeof err === "object" && err && "message" in err) {
+      return (
+        (err as { message?: string }).message || "An unknown error occurred."
+      );
+    }
+    return "An unknown error occurred.";
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -60,7 +72,7 @@ export default function SignUp() {
         "Account created! Please check your email to verify your account."
       );
       setTimeout(() => router.push("/signin"), 2500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getFriendlyError(err));
     }
   };
@@ -69,10 +81,10 @@ export default function SignUp() {
     setError("");
     setSuccess("");
     try {
-      const result = await signInWithPopup(auth, provider);
+      await signInWithPopup(auth, provider);
       setSuccess("Signed up with Google! Redirecting...");
       setTimeout(() => router.push("/"), 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getFriendlyError(err));
     }
   };
@@ -136,9 +148,9 @@ export default function SignUp() {
           {error && <div className="terminal-error">{error}</div>}
           {success && <div className="terminal-success">{success}</div>}
           <div style={{ marginTop: "1rem", textAlign: "center" }}>
-            <a className="terminal-link" href="/signin">
+            <Link className="terminal-link" href="/signin">
               Already have an account? Sign in
-            </a>
+            </Link>
           </div>
         </form>
         <button

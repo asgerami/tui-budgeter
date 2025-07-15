@@ -8,6 +8,8 @@ import { auth } from "../utils/firebaseClient";
 import Head from "next/head";
 import TerminalAuthLayout from "../components/TerminalAuthLayout";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import { FirebaseError } from "firebase/app";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -17,24 +19,31 @@ export default function SignIn() {
 
   const provider = new GoogleAuthProvider();
 
-  const getFriendlyError = (err: any) => {
-    if (!err || !err.code) return err.message || "An unknown error occurred.";
-    switch (err.code) {
-      case "auth/user-not-found":
-        return "No account found with this email.";
-      case "auth/wrong-password":
-        return "Incorrect password. Please try again.";
-      case "auth/invalid-credential":
-        return "Invalid credentials. Please check your email and password and try again.";
-      case "auth/too-many-requests":
-        return "Too many attempts. Please wait and try again.";
-      case "auth/popup-closed-by-user":
-        return "Google sign-in was cancelled.";
-      case "auth/network-request-failed":
-        return "Network error. Please check your connection.";
-      default:
-        return "Authentication failed. Please try again or reset your password.";
+  const getFriendlyError = (err: unknown) => {
+    if (err instanceof FirebaseError) {
+      switch (err.code) {
+        case "auth/user-not-found":
+          return "No account found with this email.";
+        case "auth/wrong-password":
+          return "Incorrect password. Please try again.";
+        case "auth/invalid-credential":
+          return "Invalid credentials. Please check your email and password and try again.";
+        case "auth/too-many-requests":
+          return "Too many attempts. Please wait and try again.";
+        case "auth/popup-closed-by-user":
+          return "Google sign-in was cancelled.";
+        case "auth/network-request-failed":
+          return "Network error. Please check your connection.";
+        default:
+          return "Authentication failed. Please try again or reset your password.";
+      }
     }
+    if (typeof err === "object" && err && "message" in err) {
+      return (
+        (err as { message?: string }).message || "An unknown error occurred."
+      );
+    }
+    return "An unknown error occurred.";
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -51,7 +60,7 @@ export default function SignIn() {
         return;
       }
       router.push("/");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getFriendlyError(err));
     }
   };
@@ -69,7 +78,7 @@ export default function SignIn() {
         return;
       }
       router.push("/");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(getFriendlyError(err));
     }
   };
@@ -110,9 +119,9 @@ export default function SignIn() {
           </button>
           {error && <div className="terminal-error">{error}</div>}
           <div style={{ marginTop: "1rem", textAlign: "center" }}>
-            <a className="terminal-link" href="/signup">
+            <Link className="terminal-link" href="/signup">
               Need an account? Sign up
-            </a>
+            </Link>
           </div>
         </form>
         <button

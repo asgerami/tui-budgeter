@@ -40,7 +40,7 @@ export default async function handler(
   let decoded;
   try {
     decoded = await verifyIdToken(idToken);
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: "Invalid token" });
   }
   const userId = decoded.email;
