@@ -7,8 +7,19 @@ import TransactionTable from "../components/TransactionTable";
 import Dashboard from "../components/Dashboard";
 import StatusBar from "../components/StatusBar";
 import CommandInput from "../components/CommandInput";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+  useUser,
+} from "@clerk/nextjs";
+import axios from "axios";
+import type { AxiosResponse } from "axios";
 
 export default function Home() {
+  const { user, isSignedIn } = useUser();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -17,80 +28,24 @@ export default function Home() {
   >("dashboard");
   const [notification, setNotification] = useState<string>("");
 
-  // LocalStorage helpers
-  const loadTransactions = () => {
-    try {
-      const data = localStorage.getItem("transactions");
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
+  // Fetch transactions from the database on sign in
+  useEffect(() => {
+    if (isSignedIn) {
+      axios.get("/api/userdata").then((res: AxiosResponse<any>) => {
+        const fetchedTransactions = Array.isArray(res.data) ? res.data : [];
+        setTransactions(fetchedTransactions);
+      });
+    } else {
+      setTransactions([]);
     }
-  };
-  const saveTransactions = (txs: Transaction[]) => {
-    localStorage.setItem("transactions", JSON.stringify(txs));
-  };
+  }, [isSignedIn]);
 
-  // Recurring transaction helpers
-  const loadRecurring = (): RecurringTransaction[] => {
-    try {
-      const data = localStorage.getItem("recurring_transactions");
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
+  // Save transactions to the database on change (but not on initial load)
+  useEffect(() => {
+    if (isSignedIn && transactions.length > 0) {
+      axios.post("/api/userdata", { transactions });
     }
-  };
-  const saveRecurring = (recs: RecurringTransaction[]) => {
-    localStorage.setItem("recurring_transactions", JSON.stringify(recs));
-  };
-
-  // Generate due recurring transactions
-  const generateRecurringTransactions = useCallback(() => {
-    const txs = loadTransactions();
-    const recs = loadRecurring();
-    const now = new Date();
-    let changed = false;
-    recs.forEach((rec) => {
-      let last = rec.lastGenerated
-        ? new Date(rec.lastGenerated)
-        : new Date(rec.startDate);
-      let next = getNextDate(last, rec.frequency);
-      const end = rec.endDate ? new Date(rec.endDate) : undefined;
-      while (next <= now && (!end || next <= end)) {
-        // Only add if not already present
-        const exists = txs.some(
-          (t: Transaction & { createdFromRecurringId?: string }) =>
-            t.createdFromRecurringId === rec.id &&
-            t.date === next.toISOString().split("T")[0]
-        );
-        if (!exists) {
-          txs.push({
-            id: crypto.randomUUID(),
-            date: next.toISOString().split("T")[0],
-            category: rec.category,
-            amount:
-              rec.type === "expense"
-                ? -Math.abs(rec.amount)
-                : Math.abs(rec.amount),
-            type: rec.type,
-            description: rec.description,
-            createdFromRecurringId: rec.id,
-          });
-          changed = true;
-        }
-        last = next;
-        next = getNextDate(last, rec.frequency);
-      }
-      if (last.toISOString().split("T")[0] !== rec.lastGenerated) {
-        rec.lastGenerated = last.toISOString().split("T")[0];
-        changed = true;
-      }
-    });
-    if (changed) {
-      saveTransactions(txs);
-      saveRecurring(recs);
-      setTransactions(txs);
-    }
-  }, []);
+  }, [transactions, isSignedIn]);
 
   // Helper to get next date for recurring
   function getNextDate(
@@ -122,18 +77,12 @@ export default function Home() {
     setTimeout(() => setNotification(""), 3000);
   }, []);
 
-  // Load transactions from localStorage
-  const fetchTransactions = useCallback(() => {
-    setTransactions(loadTransactions());
-  }, []);
-
   const handleClearAll = useCallback(async () => {
     if (
       confirm(
         "Are you sure you want to clear all transactions? This action cannot be undone."
       )
     ) {
-      saveTransactions([]);
       setTransactions([]);
       showNotification("All transactions cleared!");
     }
@@ -193,14 +142,8 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleClearAll, handleLoadDemo]);
 
-  useEffect(() => {
-    fetchTransactions();
-    generateRecurringTransactions();
-  }, [fetchTransactions, generateRecurringTransactions]);
-
   const handleAddTransaction = async (transaction: Transaction) => {
     const newTxs = [...transactions, transaction];
-    saveTransactions(newTxs);
     setTransactions(newTxs);
     showNotification("Transaction added successfully!");
     setCurrentView("dashboard");
@@ -214,7 +157,6 @@ export default function Home() {
   const handleDeleteTransaction = async (id: string) => {
     if (confirm("Are you sure you want to delete this transaction?")) {
       const newTxs = transactions.filter((tx) => tx.id !== id);
-      saveTransactions(newTxs);
       setTransactions(newTxs);
       showNotification("Transaction deleted successfully!");
     }
@@ -311,15 +253,29 @@ export default function Home() {
             </div>
           )}
           <div style={{ marginTop: 8, textAlign: "right" }}>
-            {/* Removed user-related UI */}
+            <SignedIn>
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    userButtonPopoverCard: "tui-panel",
+                    userButtonPopoverActionButton: "tui-button",
+                  },
+                }}
+              />
+            </SignedIn>
           </div>
         </header>
 
+        {/* Show the full app for all users, with auth overlay for unsigned users */}
         {/* Navigation */}
-        {/* Removed loadingAuth check */}
         <nav className="tui-panel">
           <div
-            style={{ display: "flex", gap: "1rem", justifyContent: "center" }}
+            style={{
+              display: "flex",
+              gap: "1rem",
+              justifyContent: "center",
+            }}
           >
             <button
               className={`tui-button ${
@@ -334,7 +290,6 @@ export default function Home() {
                 currentView === "add" ? "tui-button-success" : ""
               }`}
               onClick={() => setCurrentView("add")}
-              // Removed disabled={!user}
             >
               ➕ Add Transaction [A]
             </button>
@@ -343,13 +298,11 @@ export default function Home() {
                 currentView === "transactions" ? "tui-button-success" : ""
               }`}
               onClick={() => setCurrentView("transactions")}
-              // Removed disabled={!user}
             >
               📋 Transactions [T]
             </button>
           </div>
         </nav>
-
         {/* Main Content */}
         <main className="dashboard-grid">
           <div className="left-panel">
@@ -363,11 +316,9 @@ export default function Home() {
                 }}
               />
             )}
-
             {currentView === "dashboard" && (
               <Dashboard transactions={transactions} />
             )}
-
             {currentView === "transactions" && (
               <TransactionTable
                 transactions={transactions}
@@ -376,10 +327,8 @@ export default function Home() {
               />
             )}
           </div>
-
           <div className="right-panel">
             <CommandInput onCommand={handleCommand} />
-
             {/* Quick Actions */}
             <div className="tui-panel">
               <div className="tui-panel-header">⚡ Quick Actions</div>
@@ -393,21 +342,15 @@ export default function Home() {
                 <button
                   className="tui-button tui-button-success"
                   onClick={() => setCurrentView("add")}
-                  // Removed disabled={!user}
                 >
                   ➕ Add Transaction
                 </button>
-                <button
-                  className="tui-button"
-                  onClick={handleExport}
-                  // Removed disabled={transactions.length === 0 || !user}
-                >
+                <button className="tui-button" onClick={handleExport}>
                   📥 Export CSV
                 </button>
                 <button
                   className="tui-button tui-button-danger"
                   onClick={handleClearAll}
-                  // Removed disabled={transactions.length === 0 || !user}
                 >
                   🗑️ Clear All
                 </button>
@@ -415,13 +358,57 @@ export default function Home() {
             </div>
           </div>
         </main>
-
         {/* Status Bar */}
-        {/* Removed loadingAuth check */}
         <StatusBar
           transactions={transactions}
-          currentBalance={currentBalance}
+          currentBalance={calculateBalance()}
         />
+
+        {/* Auth overlay for unsigned users */}
+        {!isSignedIn && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                background: "var(--surface0)",
+                padding: "2rem",
+                borderRadius: "8px",
+                textAlign: "center",
+                maxWidth: "400px",
+                width: "90%",
+              }}
+            >
+              <h2 style={{ color: "var(--blue)", marginBottom: "1rem" }}>
+                Welcome to TUI Budgeter
+              </h2>
+              <p style={{ marginBottom: "2rem", color: "var(--text)" }}>
+                Sign in or create an account to start tracking your finances
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "1rem",
+                  justifyContent: "center",
+                }}
+              >
+                <SignInButton mode="modal" />
+                <SignUpButton mode="modal" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
