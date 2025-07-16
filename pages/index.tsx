@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import { Transaction } from "../types";
-import { RecurringTransaction } from "../types";
 import TransactionForm from "../components/TransactionForm";
 import TransactionTable from "../components/TransactionTable";
 import Dashboard from "../components/Dashboard";
@@ -9,7 +8,6 @@ import StatusBar from "../components/StatusBar";
 import CommandInput from "../components/CommandInput";
 import {
   SignedIn,
-  SignedOut,
   SignInButton,
   SignUpButton,
   UserButton,
@@ -19,7 +17,7 @@ import axios from "axios";
 import type { AxiosResponse } from "axios";
 
 export default function Home() {
-  const { user, isSignedIn } = useUser();
+  const { isSignedIn } = useUser();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -31,7 +29,7 @@ export default function Home() {
   // Fetch transactions from the database on sign in
   useEffect(() => {
     if (isSignedIn) {
-      axios.get("/api/userdata").then((res: AxiosResponse<any>) => {
+      axios.get("/api/userdata").then((res: AxiosResponse<Transaction[]>) => {
         const fetchedTransactions = Array.isArray(res.data) ? res.data : [];
         setTransactions(fetchedTransactions);
       });
@@ -46,31 +44,6 @@ export default function Home() {
       axios.post("/api/userdata", { transactions });
     }
   }, [transactions, isSignedIn]);
-
-  // Helper to get next date for recurring
-  function getNextDate(
-    date: Date,
-    frequency: RecurringTransaction["frequency"]
-  ): Date {
-    const d = new Date(date);
-    switch (frequency) {
-      case "daily":
-        d.setDate(d.getDate() + 1);
-        break;
-      case "weekly":
-        d.setDate(d.getDate() + 7);
-        break;
-      case "monthly":
-        d.setMonth(d.getMonth() + 1);
-        break;
-      case "yearly":
-        d.setFullYear(d.getFullYear() + 1);
-        break;
-      default:
-        d.setDate(d.getDate() + Number(frequency));
-    }
-    return d;
-  }
 
   const showNotification = useCallback((message: string) => {
     setNotification(message);
@@ -226,8 +199,6 @@ export default function Home() {
   const calculateBalance = () => {
     return transactions.reduce((sum, t) => sum + t.amount, 0);
   };
-
-  const currentBalance = calculateBalance();
 
   return (
     <>
