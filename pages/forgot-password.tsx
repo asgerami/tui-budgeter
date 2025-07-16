@@ -3,6 +3,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../utils/firebaseClient";
 import TerminalAuthLayout from "../components/TerminalAuthLayout";
 import Link from "next/link";
+import { FirebaseError } from "firebase/app";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -18,12 +19,14 @@ export default function ForgotPassword() {
     try {
       await sendPasswordResetEmail(auth, email);
       setSuccess("Password reset email sent! Check your inbox.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       let msg = "Failed to send reset email.";
-      if (err.code === "auth/user-not-found")
-        msg = "No user found with that email.";
-      else if (err.code === "auth/invalid-email")
-        msg = "Invalid email address.";
+      if (err instanceof FirebaseError) {
+        if (err.code === "auth/user-not-found")
+          msg = "No user found with that email.";
+        else if (err.code === "auth/invalid-email")
+          msg = "Invalid email address.";
+      }
       setError(msg);
     } finally {
       setLoading(false);
