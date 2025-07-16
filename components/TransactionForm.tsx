@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Transaction, TransactionFormData } from "../types";
+import {
+  Transaction,
+  TransactionFormData,
+  RecurringTransaction,
+} from "../types";
 
 interface TransactionFormProps {
   onSubmit: (transaction: Transaction) => void;
@@ -97,20 +101,26 @@ export default function TransactionForm({
     onSubmit(transaction);
 
     if (isRecurring) {
-      await fetch("/api/recurring", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.description || formData.category,
-          amount: Math.abs(finalAmount),
-          category: formData.category,
-          type: formData.type,
-          description: formData.description,
-          startDate: recurringDetails.startDate,
-          frequency: recurringDetails.frequency,
-          endDate: recurringDetails.endDate || undefined,
-        }),
-      });
+      // Save recurring transaction to localStorage
+      const rec: RecurringTransaction = {
+        id: uuidv4(),
+        name: formData.description || formData.category,
+        amount: Math.abs(finalAmount),
+        category: formData.category,
+        type: formData.type,
+        description: formData.description,
+        startDate: recurringDetails.startDate,
+        frequency:
+          recurringDetails.frequency as RecurringTransaction["frequency"],
+        endDate: recurringDetails.endDate || undefined,
+        lastGenerated: recurringDetails.startDate,
+      };
+      try {
+        const data = localStorage.getItem("recurring_transactions");
+        const recs: RecurringTransaction[] = data ? JSON.parse(data) : [];
+        recs.push(rec);
+        localStorage.setItem("recurring_transactions", JSON.stringify(recs));
+      } catch {}
     }
 
     // Reset form if not editing

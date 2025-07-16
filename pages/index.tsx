@@ -1,15 +1,12 @@
-// pages/index.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import { Transaction } from "../types";
+import { RecurringTransaction } from "../types";
 import TransactionForm from "../components/TransactionForm";
 import TransactionTable from "../components/TransactionTable";
 import Dashboard from "../components/Dashboard";
 import StatusBar from "../components/StatusBar";
 import CommandInput from "../components/CommandInput";
-import { auth } from "../utils/firebaseClient";
-import { getIdToken, onAuthStateChanged, signOut, User } from "firebase/auth";
-import Link from "next/link";
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -19,63 +16,132 @@ export default function Home() {
     "dashboard" | "transactions" | "add"
   >("dashboard");
   const [notification, setNotification] = useState<string>("");
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // Helper to get the current user's ID token and build headers
-  const getAuthHeaders = useCallback(async (contentType = false) => {
-    const user = auth.currentUser;
-    const headers: Record<string, string> = {};
-    if (contentType) headers["Content-Type"] = "application/json";
-    if (user) {
-      const token = await getIdToken(user);
-      headers["Authorization"] = `Bearer ${token}`;
+  // LocalStorage helpers
+  const loadTransactions = () => {
+    try {
+      const data = localStorage.getItem("transactions");
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
     }
-    return headers;
+  };
+  const saveTransactions = (txs: Transaction[]) => {
+    localStorage.setItem("transactions", JSON.stringify(txs));
+  };
+
+  // Recurring transaction helpers
+  const loadRecurring = (): RecurringTransaction[] => {
+    try {
+      const data = localStorage.getItem("recurring_transactions");
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  };
+  const saveRecurring = (recs: RecurringTransaction[]) => {
+    localStorage.setItem("recurring_transactions", JSON.stringify(recs));
+  };
+
+  // Generate due recurring transactions
+  const generateRecurringTransactions = useCallback(() => {
+    const txs = loadTransactions();
+    const recs = loadRecurring();
+    const now = new Date();
+    let changed = false;
+    recs.forEach((rec) => {
+      let last = rec.lastGenerated
+        ? new Date(rec.lastGenerated)
+        : new Date(rec.startDate);
+      let next = getNextDate(last, rec.frequency);
+      const end = rec.endDate ? new Date(rec.endDate) : undefined;
+      while (next <= now && (!end || next <= end)) {
+        // Only add if not already present
+        const exists = txs.some(
+          (t: Transaction & { createdFromRecurringId?: string }) =>
+            t.createdFromRecurringId === rec.id &&
+            t.date === next.toISOString().split("T")[0]
+        );
+        if (!exists) {
+          txs.push({
+            id: crypto.randomUUID(),
+            date: next.toISOString().split("T")[0],
+            category: rec.category,
+            amount:
+              rec.type === "expense"
+                ? -Math.abs(rec.amount)
+                : Math.abs(rec.amount),
+            type: rec.type,
+            description: rec.description,
+            createdFromRecurringId: rec.id,
+          });
+          changed = true;
+        }
+        last = next;
+        next = getNextDate(last, rec.frequency);
+      }
+      if (last.toISOString().split("T")[0] !== rec.lastGenerated) {
+        rec.lastGenerated = last.toISOString().split("T")[0];
+        changed = true;
+      }
+    });
+    if (changed) {
+      saveTransactions(txs);
+      saveRecurring(recs);
+      setTransactions(txs);
+    }
   }, []);
+
+  // Helper to get next date for recurring
+  function getNextDate(
+    date: Date,
+    frequency: RecurringTransaction["frequency"]
+  ): Date {
+    const d = new Date(date);
+    switch (frequency) {
+      case "daily":
+        d.setDate(d.getDate() + 1);
+        break;
+      case "weekly":
+        d.setDate(d.getDate() + 7);
+        break;
+      case "monthly":
+        d.setMonth(d.getMonth() + 1);
+        break;
+      case "yearly":
+        d.setFullYear(d.getFullYear() + 1);
+        break;
+      default:
+        d.setDate(d.getDate() + Number(frequency));
+    }
+    return d;
+  }
 
   const showNotification = useCallback((message: string) => {
     setNotification(message);
     setTimeout(() => setNotification(""), 3000);
   }, []);
 
-  // Fetch transactions from API
-  const fetchTransactions = useCallback(async () => {
-    const headers = await getAuthHeaders();
-    const res = await fetch("/api/transactions", { headers });
-    if (res.ok) {
-      const data = await res.json();
-      setTransactions(data);
-    }
-  }, [getAuthHeaders]);
+  // Load transactions from localStorage
+  const fetchTransactions = useCallback(() => {
+    setTransactions(loadTransactions());
+  }, []);
 
   const handleClearAll = useCallback(async () => {
-    if (!user) {
-      showNotification("Please sign in to clear transactions.");
-      return;
-    }
     if (
       confirm(
         "Are you sure you want to clear all transactions? This action cannot be undone."
       )
     ) {
-      const headers = await getAuthHeaders();
-      for (const tx of transactions) {
-        await fetch(`/api/transactions/${tx.id}`, {
-          method: "DELETE",
-          headers,
-        });
-      }
-      fetchTransactions();
+      saveTransactions([]);
+      setTransactions([]);
       showNotification("All transactions cleared!");
     }
-  }, [user, transactions, getAuthHeaders, fetchTransactions, showNotification]);
+  }, [showNotification]);
 
   const handleLoadDemo = useCallback(() => {
-    // This function is no longer needed as transactions are fetched from API
-    // StorageService.loadDemoData();
-    // setTransactions(StorageService.getTransactions());
-    showNotification("Demo data loading is no longer available.");
+    // Optionally, load demo data here
+    showNotification("Demo data loading is not implemented.");
   }, [showNotification]);
 
   // Keyboard shortcuts
@@ -128,52 +194,28 @@ export default function Home() {
   }, [handleClearAll, handleLoadDemo]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoadingAuth(false);
-      if (firebaseUser) {
-        fetchTransactions();
-      } else {
-        setTransactions([]);
-      }
-    });
-    return () => unsubscribe();
-  }, [fetchTransactions]);
+    fetchTransactions();
+    generateRecurringTransactions();
+  }, [fetchTransactions, generateRecurringTransactions]);
 
   const handleAddTransaction = async (transaction: Transaction) => {
-    if (!user) {
-      showNotification("Please sign in to add transactions.");
-      return;
-    }
-    const headers = await getAuthHeaders(true);
-    await fetch("/api/transactions", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(transaction),
-    });
-    fetchTransactions();
+    const newTxs = [...transactions, transaction];
+    saveTransactions(newTxs);
+    setTransactions(newTxs);
     showNotification("Transaction added successfully!");
     setCurrentView("dashboard");
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
-    if (!user) {
-      showNotification("Please sign in to edit transactions.");
-      return;
-    }
     setEditingTransaction(transaction);
     setCurrentView("add");
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    if (!user) {
-      showNotification("Please sign in to delete transactions.");
-      return;
-    }
     if (confirm("Are you sure you want to delete this transaction?")) {
-      const headers = await getAuthHeaders();
-      await fetch(`/api/transactions/${id}`, { method: "DELETE", headers });
-      fetchTransactions();
+      const newTxs = transactions.filter((tx) => tx.id !== id);
+      saveTransactions(newTxs);
+      setTransactions(newTxs);
       showNotification("Transaction deleted successfully!");
     }
   };
@@ -213,10 +255,6 @@ export default function Home() {
   };
 
   const handleExport = () => {
-    if (!user) {
-      showNotification("Please sign in to export transactions.");
-      return;
-    }
     if (transactions.length === 0) {
       showNotification("No transactions to export");
       return;
@@ -273,82 +311,49 @@ export default function Home() {
             </div>
           )}
           <div style={{ marginTop: 8, textAlign: "right" }}>
-            {loadingAuth ? (
-              <span className="terminal-loading">Loading...</span>
-            ) : user ? (
-              <button
-                className="tui-button tui-button-danger"
-                onClick={async () => {
-                  await signOut(auth);
-                  setNotification("Logged out successfully.");
-                }}
-              >
-                Log Out
-              </button>
-            ) : (
-              <>
-                <Link
-                  className="tui-button"
-                  href="/signin"
-                  style={{ marginRight: 8 }}
-                >
-                  Sign In
-                </Link>
-                <Link className="tui-button tui-button-success" href="/signup">
-                  Sign Up
-                </Link>
-              </>
-            )}
+            {/* Removed user-related UI */}
           </div>
         </header>
 
         {/* Navigation */}
-        {loadingAuth ? (
+        {/* Removed loadingAuth check */}
+        <nav className="tui-panel">
           <div
-            className="terminal-loading"
-            style={{ textAlign: "center", margin: "2rem 0" }}
+            style={{ display: "flex", gap: "1rem", justifyContent: "center" }}
           >
-            Loading...
-          </div>
-        ) : (
-          <nav className="tui-panel">
-            <div
-              style={{ display: "flex", gap: "1rem", justifyContent: "center" }}
+            <button
+              className={`tui-button ${
+                currentView === "dashboard" ? "tui-button-success" : ""
+              }`}
+              onClick={() => setCurrentView("dashboard")}
             >
-              <button
-                className={`tui-button ${
-                  currentView === "dashboard" ? "tui-button-success" : ""
-                }`}
-                onClick={() => setCurrentView("dashboard")}
-              >
-                📊 Dashboard [H]
-              </button>
-              <button
-                className={`tui-button ${
-                  currentView === "add" ? "tui-button-success" : ""
-                }`}
-                onClick={() => setCurrentView("add")}
-                disabled={!user}
-              >
-                ➕ Add Transaction [A]
-              </button>
-              <button
-                className={`tui-button ${
-                  currentView === "transactions" ? "tui-button-success" : ""
-                }`}
-                onClick={() => setCurrentView("transactions")}
-                disabled={!user}
-              >
-                📋 Transactions [T]
-              </button>
-            </div>
-          </nav>
-        )}
+              📊 Dashboard [H]
+            </button>
+            <button
+              className={`tui-button ${
+                currentView === "add" ? "tui-button-success" : ""
+              }`}
+              onClick={() => setCurrentView("add")}
+              // Removed disabled={!user}
+            >
+              ➕ Add Transaction [A]
+            </button>
+            <button
+              className={`tui-button ${
+                currentView === "transactions" ? "tui-button-success" : ""
+              }`}
+              onClick={() => setCurrentView("transactions")}
+              // Removed disabled={!user}
+            >
+              📋 Transactions [T]
+            </button>
+          </div>
+        </nav>
 
         {/* Main Content */}
         <main className="dashboard-grid">
           <div className="left-panel">
-            {currentView === "add" && user && (
+            {currentView === "add" && (
               <TransactionForm
                 onSubmit={handleAddTransaction}
                 editingTransaction={editingTransaction ?? undefined}
@@ -363,36 +368,12 @@ export default function Home() {
               <Dashboard transactions={transactions} />
             )}
 
-            {currentView === "transactions" && user && (
+            {currentView === "transactions" && (
               <TransactionTable
                 transactions={transactions}
                 onEdit={handleEditTransaction}
                 onDelete={handleDeleteTransaction}
               />
-            )}
-            {currentView !== "dashboard" && !user && (
-              <div style={{ marginTop: 32, textAlign: "center" }}>
-                <p>Please sign in to access this feature.</p>
-                <div
-                  style={{
-                    marginTop: 16,
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: 12,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Link className="tui-button" href="/signin">
-                    Sign In
-                  </Link>
-                  <Link
-                    className="tui-button tui-button-success"
-                    href="/signup"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              </div>
             )}
           </div>
 
@@ -412,21 +393,21 @@ export default function Home() {
                 <button
                   className="tui-button tui-button-success"
                   onClick={() => setCurrentView("add")}
-                  disabled={!user}
+                  // Removed disabled={!user}
                 >
                   ➕ Add Transaction
                 </button>
                 <button
                   className="tui-button"
                   onClick={handleExport}
-                  disabled={transactions.length === 0 || !user}
+                  // Removed disabled={transactions.length === 0 || !user}
                 >
                   📥 Export CSV
                 </button>
                 <button
                   className="tui-button tui-button-danger"
                   onClick={handleClearAll}
-                  disabled={transactions.length === 0 || !user}
+                  // Removed disabled={transactions.length === 0 || !user}
                 >
                   🗑️ Clear All
                 </button>
@@ -436,12 +417,11 @@ export default function Home() {
         </main>
 
         {/* Status Bar */}
-        {!loadingAuth && (
-          <StatusBar
-            transactions={transactions}
-            currentBalance={currentBalance}
-          />
-        )}
+        {/* Removed loadingAuth check */}
+        <StatusBar
+          transactions={transactions}
+          currentBalance={currentBalance}
+        />
       </div>
     </>
   );

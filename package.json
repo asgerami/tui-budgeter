@@ -11,9 +11,6 @@
   "dependencies": {
     "@webtui/theme-catppuccin": "^0.0.3",
     "bcryptjs": "^3.0.2",
-    "firebase": "^11.10.0",
-    "firebase-admin": "^13.4.0",
-    "mongodb": "^5.9.2",
     "next": "15.3.5",
     "nodemailer": "^6.10.1",
     "react": "^19.0.0",

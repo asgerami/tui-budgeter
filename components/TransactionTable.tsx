@@ -1,4 +1,3 @@
-// components/TransactionTable.tsx
 import React, { useState } from "react";
 import { Transaction, FilterOptions } from "../types";
 
@@ -313,7 +312,6 @@ export default function TransactionTable({
           </button>
         </div>
       )}
-
     </div>
   );
 }

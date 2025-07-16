@@ -1,4 +1,3 @@
-// components/CommandInput.tsx
 import React, { useState } from "react";
 
 interface CommandInputProps {
@@ -98,9 +97,6 @@ export default function CommandInput({ onCommand }: CommandInputProps) {
           </li>
           <li>
             <code>transactions</code> - Show transaction history
-          </li>
-          <li>
-            <code>dashboard</code> - Show dashboard
           </li>
         </ul>
       </div>
