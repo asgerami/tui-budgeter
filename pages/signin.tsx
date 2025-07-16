@@ -113,6 +113,11 @@ export default function SignIn() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <div style={{ margin: "0.5rem 0 1rem 0", textAlign: "right" }}>
+            <Link className="terminal-link" href="/forgot-password">
+              Forgot password?
+            </Link>
+          </div>
           <button className="terminal-btn" type="submit">
             <span>&gt; Login</span>
             <span className="terminal-cursor">█</span>
