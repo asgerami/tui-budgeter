@@ -135,7 +135,7 @@ export default function Dashboard({ transactions }: DashboardProps) {
                   borderRadius: "0.25rem",
                 }}
               >
-                <span is-="badge" variant="yellow" cap="round">
+                <span is-="badge" data-variant="yellow" data-cap="round">
                   {category}
                 </span>
                 <span style={{ fontWeight: "bold" }}>
@@ -171,7 +171,7 @@ export default function Dashboard({ transactions }: DashboardProps) {
               >
                 <div>
                   <div style={{ fontWeight: "bold", marginBottom: "0.25rem" }}>
-                    <span is-="badge" variant="yellow" cap="round">
+                    <span is-="badge" data-variant="yellow" data-cap="round">
                       {transaction.category}
                     </span>
                   </div>

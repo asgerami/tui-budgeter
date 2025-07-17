@@ -72,6 +72,7 @@ export default function TransactionForm({
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<TransactionFormData> = {};
@@ -110,58 +111,63 @@ export default function TransactionForm({
 
     if (!validateForm()) return;
 
-    const amount = parseFloat(formData.amount);
-    const finalAmount = formData.type === "expense" ? -amount : amount;
+    setLoading(true);
+    try {
+      const amount = parseFloat(formData.amount);
+      const finalAmount = formData.type === "expense" ? -amount : amount;
 
-    const transaction: Transaction = {
-      id: editingTransaction?.id || uuidv4(),
-      date: formData.date,
-      category: formData.category,
-      amount: finalAmount,
-      type: formData.type,
-      description: formData.description || undefined,
-    };
-
-    onSubmit(transaction);
-
-    if (isRecurring) {
-      // Save recurring transaction to localStorage
-      const rec: RecurringTransaction = {
-        id: uuidv4(),
-        name: formData.description || formData.category,
-        amount: Math.abs(finalAmount),
+      const transaction: Transaction = {
+        id: editingTransaction?.id || uuidv4(),
+        date: formData.date,
         category: formData.category,
+        amount: finalAmount,
         type: formData.type,
-        description: formData.description,
-        startDate: recurringDetails.startDate,
-        frequency:
-          recurringDetails.frequency as RecurringTransaction["frequency"],
-        endDate: recurringDetails.endDate || undefined,
-        lastGenerated: recurringDetails.startDate,
+        description: formData.description || undefined,
       };
-      try {
-        const data = localStorage.getItem("recurring_transactions");
-        const recs: RecurringTransaction[] = data ? JSON.parse(data) : [];
-        recs.push(rec);
-        localStorage.setItem("recurring_transactions", JSON.stringify(recs));
-      } catch {}
-    }
 
-    // Reset form if not editing
-    if (!editingTransaction) {
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        category: "",
-        amount: "",
-        type: "expense",
-        description: "",
-      });
-      setIsRecurring(false);
-      setRecurringDetails({
-        frequency: "monthly",
-        startDate: new Date().toISOString().split("T")[0],
-        endDate: "",
-      });
+      await onSubmit(transaction);
+
+      if (isRecurring) {
+        // Save recurring transaction to localStorage
+        const rec: RecurringTransaction = {
+          id: uuidv4(),
+          name: formData.description || formData.category,
+          amount: Math.abs(finalAmount),
+          category: formData.category,
+          type: formData.type,
+          description: formData.description,
+          startDate: recurringDetails.startDate,
+          frequency:
+            recurringDetails.frequency as RecurringTransaction["frequency"],
+          endDate: recurringDetails.endDate || undefined,
+          lastGenerated: recurringDetails.startDate,
+        };
+        try {
+          const data = localStorage.getItem("recurring_transactions");
+          const recs: RecurringTransaction[] = data ? JSON.parse(data) : [];
+          recs.push(rec);
+          localStorage.setItem("recurring_transactions", JSON.stringify(recs));
+        } catch {}
+      }
+
+      // Reset form if not editing
+      if (!editingTransaction) {
+        setFormData({
+          date: new Date().toISOString().split("T")[0],
+          category: "",
+          amount: "",
+          type: "expense",
+          description: "",
+        });
+        setIsRecurring(false);
+        setRecurringDetails({
+          frequency: "monthly",
+          startDate: new Date().toISOString().split("T")[0],
+          endDate: "",
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -332,12 +338,28 @@ export default function TransactionForm({
           </div>
         )}
         <div className="transaction-actions">
+          {loading && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                margin: "1rem 0",
+              }}
+            >
+              <div
+                is-="spinner"
+                data-variant="blue"
+                style={{ width: 32, height: 32 }}
+              ></div>
+            </div>
+          )}
           <button
             is-="button"
             data-variant="green"
             data-box="round"
             data-size="large"
             type="submit"
+            disabled={loading}
           >
             {editingTransaction ? "Save Changes" : "Add Transaction"}
           </button>
@@ -351,6 +373,7 @@ export default function TransactionForm({
               type="button"
               onClick={onCancel}
               style={{ marginLeft: "1rem" }}
+              disabled={loading}
             >
               Cancel
             </button>
