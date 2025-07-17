@@ -79,7 +79,6 @@ export default function Home() {
   }, [showNotification]);
 
   const handleLoadDemo = useCallback(() => {
-   
     showNotification("Demo data loading is not implemented.");
   }, [showNotification]);
 
@@ -131,10 +130,26 @@ export default function Home() {
   }, [handleClearAll, handleLoadDemo]);
 
   const handleAddTransaction = async (transaction: Transaction) => {
-    const newTxs = [...transactions, transaction];
-    setTransactions(newTxs);
-    showNotification("Transaction added successfully!");
-    setCurrentView("dashboard");
+    let newTxs;
+    if (editingTransaction) {
+      newTxs = transactions.map((tx) =>
+        tx.id === editingTransaction.id ? transaction : tx
+      );
+    } else {
+      newTxs = [...transactions, transaction];
+    }
+    try {
+      await axios.post("/api/userdata", { transactions: newTxs });
+      setEditingTransaction(null);
+      showNotification(
+        editingTransaction
+          ? "Transaction updated successfully!"
+          : "Transaction added successfully!"
+      );
+      setCurrentView("dashboard");
+    } catch (err) {
+      showNotification("Failed to save transaction. Please try again.");
+    }
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -145,8 +160,12 @@ export default function Home() {
   const handleDeleteTransaction = async (id: string) => {
     if (confirm("Are you sure you want to delete this transaction?")) {
       const newTxs = transactions.filter((tx) => tx.id !== id);
-      setTransactions(newTxs);
-      showNotification("Transaction deleted successfully!");
+      try {
+        await axios.post("/api/userdata", { transactions: newTxs });
+        showNotification("Transaction deleted successfully!");
+      } catch (err) {
+        showNotification("Failed to delete transaction. Please try again.");
+      }
     }
   };
 
