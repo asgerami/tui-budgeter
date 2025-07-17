@@ -1,5 +1,14 @@
-@import url("https://unpkg.com/webtui@latest/dist/webtui.min.css");
-@import url("https://unpkg.com/@webtui/theme-catppuccin@latest");
+@layer base, utils, components;
+
+@import "@webtui/css/base.css";
+@import "@webtui/css/utils/box.css";
+
+@import "@webtui/css/components/button.css";
+@import "@webtui/css/components/badge.css";
+@import "@webtui/css/components/checkbox.css";
+@import "@webtui/css/components/separator.css";
+
+@import '@webtui/theme-catppuccin';
 
 * {
   box-sizing: border-box;

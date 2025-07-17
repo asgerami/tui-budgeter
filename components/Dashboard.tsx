@@ -135,7 +135,9 @@ export default function Dashboard({ transactions }: DashboardProps) {
                   borderRadius: "0.25rem",
                 }}
               >
-                <span className="category-tag">{category}</span>
+                <span is-="badge" variant="yellow" cap="round">
+                  {category}
+                </span>
                 <span style={{ fontWeight: "bold" }}>
                   {formatCurrency(amount)}
                 </span>
@@ -169,7 +171,9 @@ export default function Dashboard({ transactions }: DashboardProps) {
               >
                 <div>
                   <div style={{ fontWeight: "bold", marginBottom: "0.25rem" }}>
-                    {transaction.category}
+                    <span is-="badge" variant="yellow" cap="round">
+                      {transaction.category}
+                    </span>
                   </div>
                   <div
                     style={{

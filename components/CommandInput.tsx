@@ -40,13 +40,15 @@ export default function CommandInput({ onCommand }: CommandInputProps) {
   return (
     <div className="tui-panel">
       <div className="tui-panel-header">⌨️ Command Input</div>
-      
+
       <form onSubmit={handleSubmit} className="command-input">
         <span style={{ color: "var(--ctp-mocha-blue)", fontWeight: "bold" }}>
           $
         </span>
         <input
           type="text"
+          is-="input"
+          className="tui-input"
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -58,19 +60,34 @@ export default function CommandInput({ onCommand }: CommandInputProps) {
 
       <div className="shortcuts">
         <span className="shortcut">
-          <span className="shortcut-key">a</span> Add transaction
+          <span is-="badge" data-variant="orange" data-cap="round">
+            a
+          </span>{" "}
+          Add transaction
         </span>
         <span className="shortcut">
-          <span className="shortcut-key">c</span> Clear all
+          <span is-="badge" data-variant="yellow" data-cap="round">
+            c
+          </span>{" "}
+          Clear all
         </span>
         <span className="shortcut">
-          <span className="shortcut-key">e</span> Export
+          <span is-="badge" data-variant="green" data-cap="round">
+            e
+          </span>{" "}
+          Export
         </span>
         <span className="shortcut">
-          <span className="shortcut-key">t</span> Transactions
+          <span is-="badge" data-variant="yellow" data-cap="round">
+            t
+          </span>{" "}
+          Transactions
         </span>
         <span className="shortcut">
-          <span className="shortcut-key">s</span> Dashboard
+          <span is-="badge" data-variant="blue" data-cap="round">
+            s
+          </span>{" "}
+          Dashboard
         </span>
       </div>
 

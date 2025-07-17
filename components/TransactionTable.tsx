@@ -216,15 +216,18 @@ export default function TransactionTable({
           }}
         >
           <button
+            is-="button"
+            data-variant="blue"
+            data-box="round"
+            data-size="small"
             type="button"
-            className="tui-button"
+            onClick={clearFilters}
             style={{
               width: "80px",
-              height: "2.1em",
+              height: "3.6em",
               fontSize: "0.95em",
               padding: "0.25em 0.5em",
             }}
-            onClick={clearFilters}
           >
             Clear
           </button>
@@ -264,7 +267,9 @@ export default function TransactionTable({
               <tr key={transaction.id}>
                 <td>{formatDate(transaction.date)}</td>
                 <td>
-                  <span className="category-tag">{transaction.category}</span>
+                  <span is-="badge" data-variant="yellow" data-cap="round">
+                    {transaction.category}
+                  </span>
                 </td>
                 <td>{transaction.description || "-"}</td>
                 <td
@@ -283,14 +288,20 @@ export default function TransactionTable({
                 <td>
                   <div className="transaction-actions">
                     <button
-                      className="tui-button"
+                      is-="button"
+                      data-variant="blue"
+                      data-box="round"
+                      data-size="small"
                       onClick={() => onEdit(transaction)}
                       style={{ padding: "0.25rem 0.5rem", fontSize: "0.8rem" }}
                     >
                       ✏️
                     </button>
                     <button
-                      className="tui-button tui-button-danger"
+                      is-="button"
+                      data-variant="red"
+                      box-="round"
+                      data-size="small"
                       onClick={() => onDelete(transaction.id)}
                       style={{ padding: "0.25rem 0.5rem", fontSize: "0.8rem" }}
                     >
@@ -307,7 +318,13 @@ export default function TransactionTable({
       {filteredTransactions.length === 0 && transactions.length > 0 && (
         <div className="empty-state">
           <p>No transactions match the current filters.</p>
-          <button className="tui-button" onClick={clearFilters}>
+          <button
+            is-="button"
+            data-variant="blue"
+            data-box="round"
+            data-size="small"
+            onClick={clearFilters}
+          >
             Clear Filters
           </button>
         </div>

@@ -182,6 +182,7 @@ export default function TransactionForm({
             <input
               id="date"
               type="date"
+              is-="input"
               className="tui-input"
               value={formData.date}
               onChange={(e) => handleInputChange("date", e.target.value)}
@@ -200,6 +201,7 @@ export default function TransactionForm({
             <label htmlFor="type">Type</label>
             <select
               id="type"
+              is-="select"
               className="tui-select"
               value={formData.type}
               onChange={(e) => handleInputChange("type", e.target.value)}
@@ -215,6 +217,7 @@ export default function TransactionForm({
             <label htmlFor="category">Category</label>
             <select
               id="category"
+              is-="select"
               className="tui-select"
               value={formData.category}
               onChange={(e) => handleInputChange("category", e.target.value)}
@@ -243,6 +246,7 @@ export default function TransactionForm({
               type="number"
               step="0.01"
               min="0"
+              is-="input"
               className="tui-input"
               value={formData.amount}
               onChange={(e) => handleInputChange("amount", e.target.value)}
@@ -264,6 +268,7 @@ export default function TransactionForm({
           <input
             id="description"
             type="text"
+            is-="input"
             className="tui-input"
             value={formData.description}
             onChange={(e) => handleInputChange("description", e.target.value)}
@@ -274,6 +279,7 @@ export default function TransactionForm({
           <label>
             <input
               type="checkbox"
+              is-="checkbox"
               checked={isRecurring}
               onChange={(e) => setIsRecurring(e.target.checked)}
               style={{ marginRight: "0.5em" }}
@@ -286,6 +292,7 @@ export default function TransactionForm({
             <div className="form-group">
               <label>Frequency</label>
               <select
+                is-="select"
                 className="tui-select"
                 value={recurringDetails.frequency}
                 onChange={(e) =>
@@ -302,6 +309,7 @@ export default function TransactionForm({
               <label>Start Date</label>
               <input
                 type="date"
+                is-="input"
                 className="tui-input"
                 value={recurringDetails.startDate}
                 onChange={(e) =>
@@ -313,6 +321,7 @@ export default function TransactionForm({
               <label>End Date (optional)</label>
               <input
                 type="date"
+                is-="input"
                 className="tui-input"
                 value={recurringDetails.endDate}
                 onChange={(e) =>
@@ -324,17 +333,26 @@ export default function TransactionForm({
         )}
         <div className="transaction-actions">
           <button
+            is-="button"
+            data-variant="green"
+            data-box="round"
+            data-size="large"
             type="submit"
-            className={`tui-button ${
-              editingTransaction ? "tui-button-success" : ""
-            }`}
           >
-            {editingTransaction ? "💾 Update" : "➕ Add Transaction"}
+            {editingTransaction ? "Save Changes" : "Add Transaction"}
           </button>
 
           {editingTransaction && onCancel && (
-            <button type="button" className="tui-button" onClick={onCancel}>
-              ❌ Cancel
+            <button
+              is-="button"
+              data-variant="yellow"
+              data-box="round"
+              data-size="large"
+              type="button"
+              onClick={onCancel}
+              style={{ marginLeft: "1rem" }}
+            >
+              Cancel
             </button>
           )}
         </div>
