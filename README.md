@@ -22,10 +22,6 @@ Manage your transactions quickly with keyboard shortcuts, real-time sync, and CS
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
    CLERK_SECRET_KEY=your_clerk_secret_key
    MONGODB_URI=your_mongodb_atlas_uri
-   PUSHER_APP_ID=your_pusher_app_id
-   PUSHER_KEY=your_pusher_key
-   PUSHER_SECRET=your_pusher_secret
-   PUSHER_CLUSTER=your_pusher_cluster
    ```
 3. Install dependencies:
    ```bash
