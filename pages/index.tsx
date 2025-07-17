@@ -8,6 +8,8 @@ import StatusBar from "../components/StatusBar";
 import CommandInput from "../components/CommandInput";
 import {
   SignedIn,
+  SignInButton,
+  SignUpButton,
   UserButton,
   useUser,
 } from "@clerk/nextjs";
@@ -77,6 +79,7 @@ export default function Home() {
   }, [showNotification]);
 
   const handleLoadDemo = useCallback(() => {
+   
     showNotification("Demo data loading is not implemented.");
   }, [showNotification]);
 
@@ -221,6 +224,7 @@ export default function Home() {
           content="A terminal-style personal finance tracker"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <div className="main-container">
@@ -307,25 +311,31 @@ export default function Home() {
           </div>
           <div className="right-panel">
             <CommandInput onCommand={handleCommand} />
-            <div className="quick-actions">
-              <button
-                className="tui-button tui-button-danger"
-                onClick={handleClearAll}
+            <div className="tui-panel">
+              <div className="tui-panel-header">⚡ Quick Actions</div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.5rem",
+                }}
               >
-                Clear All
-              </button>
-              <button
-                className="tui-button tui-button-secondary"
-                onClick={handleLoadDemo}
-              >
-                Load Demo
-              </button>
-              <button
-                className="tui-button tui-button-secondary"
-                onClick={handleExport}
-              >
-                Export CSV
-              </button>
+                <button
+                  className="tui-button tui-button-success"
+                  onClick={() => setCurrentView("add")}
+                >
+                  ➕ Add Transaction
+                </button>
+                <button className="tui-button" onClick={handleExport}>
+                  📥 Export CSV
+                </button>
+                <button
+                  className="tui-button tui-button-danger"
+                  onClick={handleClearAll}
+                >
+                  🗑️ Clear All
+                </button>
+              </div>
             </div>
           </div>
         </main>
@@ -333,7 +343,56 @@ export default function Home() {
           transactions={transactions}
           currentBalance={calculateBalance()}
         />
+
+        {!isSignedIn && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                background: "var(--surface0)",
+                padding: "2rem",
+                borderRadius: "8px",
+                textAlign: "center",
+                maxWidth: "400px",
+                width: "90%",
+              }}
+            >
+              <h2 style={{ color: "var(--blue)", marginBottom: "1rem" }}>
+                Welcome to TUI Budgeter
+              </h2>
+              <p style={{ marginBottom: "2rem", color: "var(--text)" }}>
+                Sign in or create an account to start tracking your finances
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "1rem",
+                  justifyContent: "center",
+                }}
+              >
+                <SignInButton mode="modal" />
+                <SignUpButton mode="modal" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
+}
+
+export async function getServerSideProps() {
+  return { props: {} };
 }
