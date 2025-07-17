@@ -40,7 +40,7 @@ export default function CommandInput({ onCommand }: CommandInputProps) {
   return (
     <div className="tui-panel">
       <div className="tui-panel-header">⌨️ Command Input</div>
-
+      
       <form onSubmit={handleSubmit} className="command-input">
         <span style={{ color: "var(--ctp-mocha-blue)", fontWeight: "bold" }}>
           $

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import clientPromise from "../../utils/mongodb";
+import { pusher } from "../../utils/pusher";
 
 const DB_NAME = "tui-budgeter";
 
@@ -39,12 +40,16 @@ export default async function handler(
       { $set: { transactions } },
       { upsert: true }
     );
+    // Trigger Pusher event for real-time update
+    await pusher.trigger("transactions", "updated", { userId });
     return res.status(200).json({ ok: true });
   }
 
   if (req.method === "DELETE") {
     // Delete all user data
     await collection.deleteOne({ userId });
+    // Trigger Pusher event for real-time update
+    await pusher.trigger("transactions", "updated", { userId });
     return res.status(200).json({ ok: true });
   }
 

@@ -15,9 +15,10 @@ import {
 } from "@clerk/nextjs";
 import axios from "axios";
 import type { AxiosResponse } from "axios";
+import { pusherClient } from "../utils/pusherClient";
 
 export default function Home() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -44,6 +45,25 @@ export default function Home() {
       axios.post("/api/userdata", { transactions });
     }
   }, [transactions, isSignedIn]);
+
+  // Real-time updates: subscribe to Pusher
+  useEffect(() => {
+    if (!isSignedIn || !user) return;
+    const channel = pusherClient.subscribe("transactions");
+    const handler = (data: { userId: string }) => {
+      if (data.userId === user.id) {
+        axios.get("/api/userdata").then((res: AxiosResponse<Transaction[]>) => {
+          const fetchedTransactions = Array.isArray(res.data) ? res.data : [];
+          setTransactions(fetchedTransactions);
+        });
+      }
+    };
+    channel.bind("updated", handler);
+    return () => {
+      channel.unbind("updated", handler);
+      pusherClient.unsubscribe("transactions");
+    };
+  }, [isSignedIn, user]);
 
   const showNotification = useCallback((message: string) => {
     setNotification(message);
