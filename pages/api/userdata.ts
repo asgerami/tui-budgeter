@@ -10,7 +10,6 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const { userId } = getAuth(req);
-  console.log("API userId:", userId);
 
   if (!userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -22,19 +21,14 @@ export default async function handler(
 
   if (req.method === "GET") {
     // Fetch user data
-    console.log("GET request - searching for userId:", userId);
     const doc = await collection.findOne({ userId });
-    console.log("MongoDB query result:", doc);
     const transactions = doc?.transactions || [];
-    console.log("Returning transactions:", transactions);
     return res.status(200).json(transactions);
   }
 
   if (req.method === "POST") {
     // Save/update user data
     const { transactions } = req.body;
-    console.log("POST request - saving for userId:", userId);
-    console.log("Transactions to save:", transactions);
     await collection.updateOne(
       { userId },
       { $set: { transactions } },

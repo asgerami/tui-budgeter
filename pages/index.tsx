@@ -27,7 +27,6 @@ export default function Home() {
   >("dashboard");
   const [notification, setNotification] = useState<string>("");
 
-  // Fetch transactions from the database on sign in
   useEffect(() => {
     if (isSignedIn) {
       axios.get("/api/userdata").then((res: AxiosResponse<Transaction[]>) => {
@@ -39,14 +38,12 @@ export default function Home() {
     }
   }, [isSignedIn]);
 
-  // Save transactions to the database on change (but not on initial load)
   useEffect(() => {
     if (isSignedIn && transactions.length > 0) {
       axios.post("/api/userdata", { transactions });
     }
   }, [transactions, isSignedIn]);
 
-  // Real-time updates: subscribe to Pusher
   useEffect(() => {
     if (!isSignedIn || !user) return;
     const channel = pusherClient.subscribe("transactions");
@@ -82,14 +79,11 @@ export default function Home() {
   }, [showNotification]);
 
   const handleLoadDemo = useCallback(() => {
-    // Optionally, load demo data here
     showNotification("Demo data loading is not implemented.");
   }, [showNotification]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle shortcuts when not typing in an input
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -229,11 +223,9 @@ export default function Home() {
           content="A terminal-style personal finance tracker"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <div className="main-container">
-        {/* Header */}
         <header className="header">
           <h1>💰 TUI BUDGETER</h1>
           <p>Terminal-style Personal Finance Tracker</p>
@@ -258,8 +250,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Show the full app for all users, with auth overlay for unsigned users */}
-        {/* Navigation */}
         <nav className="tui-panel">
           <div
             style={{
@@ -294,7 +284,6 @@ export default function Home() {
             </button>
           </div>
         </nav>
-        {/* Main Content */}
         <main className="dashboard-grid">
           <div className="left-panel">
             {currentView === "add" && (
@@ -320,92 +309,33 @@ export default function Home() {
           </div>
           <div className="right-panel">
             <CommandInput onCommand={handleCommand} />
-            {/* Quick Actions */}
-            <div className="tui-panel">
-              <div className="tui-panel-header">⚡ Quick Actions</div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "0.5rem",
-                }}
+            <div className="quick-actions">
+              <button
+                className="tui-button tui-button-danger"
+                onClick={handleClearAll}
               >
-                <button
-                  className="tui-button tui-button-success"
-                  onClick={() => setCurrentView("add")}
-                >
-                  ➕ Add Transaction
-                </button>
-                <button className="tui-button" onClick={handleExport}>
-                  📥 Export CSV
-                </button>
-                <button
-                  className="tui-button tui-button-danger"
-                  onClick={handleClearAll}
-                >
-                  🗑️ Clear All
-                </button>
-              </div>
+                Clear All
+              </button>
+              <button
+                className="tui-button tui-button-secondary"
+                onClick={handleLoadDemo}
+              >
+                Load Demo
+              </button>
+              <button
+                className="tui-button tui-button-secondary"
+                onClick={handleExport}
+              >
+                Export CSV
+              </button>
             </div>
           </div>
         </main>
-        {/* Status Bar */}
         <StatusBar
           transactions={transactions}
           currentBalance={calculateBalance()}
         />
-
-        {/* Auth overlay for unsigned users */}
-        {!isSignedIn && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.8)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                background: "var(--surface0)",
-                padding: "2rem",
-                borderRadius: "8px",
-                textAlign: "center",
-                maxWidth: "400px",
-                width: "90%",
-              }}
-            >
-              <h2 style={{ color: "var(--blue)", marginBottom: "1rem" }}>
-                Welcome to TUI Budgeter
-              </h2>
-              <p style={{ marginBottom: "2rem", color: "var(--text)" }}>
-                Sign in or create an account to start tracking your finances
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  justifyContent: "center",
-                }}
-              >
-                <SignInButton mode="modal" />
-                <SignUpButton mode="modal" />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
-}
-
-export async function getServerSideProps() {
-  // Remove all code related to NextAuth session logic.
-  return { props: {} };
 }
