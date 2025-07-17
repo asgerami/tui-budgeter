@@ -70,7 +70,7 @@ export default function CommandInput({ onCommand }: CommandInputProps) {
           <span className="shortcut-key">t</span> Transactions
         </span>
         <span className="shortcut">
-          <span className="shortcut-key">h</span> Dashboard
+          <span className="shortcut-key">s</span> Dashboard
         </span>
       </div>
 

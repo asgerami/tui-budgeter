@@ -39,12 +39,6 @@ export default function Home() {
   }, [isSignedIn]);
 
   useEffect(() => {
-    if (isSignedIn && transactions.length > 0) {
-      axios.post("/api/userdata", { transactions });
-    }
-  }, [transactions, isSignedIn]);
-
-  useEffect(() => {
     if (!isSignedIn || !user) return;
     const channel = pusherClient.subscribe("transactions");
     const handler = (data: { userId: string }) => {
@@ -73,8 +67,13 @@ export default function Home() {
         "Are you sure you want to clear all transactions? This action cannot be undone."
       )
     ) {
-      setTransactions([]);
-      showNotification("All transactions cleared!");
+      try {
+        await axios.post("/api/userdata", { transactions: [] });
+        setTransactions([]);
+        showNotification("All transactions cleared!");
+      } catch {
+        showNotification("Failed to clear transactions. Please try again.");
+      }
     }
   }, [showNotification]);
 
@@ -147,7 +146,8 @@ export default function Home() {
           : "Transaction added successfully!"
       );
       setCurrentView("dashboard");
-    } catch (err) {
+      // Do not update setTransactions here; rely on Pusher event for sync
+    } catch {
       showNotification("Failed to save transaction. Please try again.");
     }
   };
@@ -163,7 +163,8 @@ export default function Home() {
       try {
         await axios.post("/api/userdata", { transactions: newTxs });
         showNotification("Transaction deleted successfully!");
-      } catch (err) {
+        // Do not update setTransactions here; rely on Pusher event for sync
+      } catch {
         showNotification("Failed to delete transaction. Please try again.");
       }
     }
@@ -410,8 +411,4 @@ export default function Home() {
       </div>
     </>
   );
-}
-
-export async function getServerSideProps() {
-  return { props: {} };
 }
