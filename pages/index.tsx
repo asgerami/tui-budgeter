@@ -8,8 +8,6 @@ import StatusBar from "../components/StatusBar";
 import CommandInput from "../components/CommandInput";
 import {
   SignedIn,
-  SignInButton,
-  SignUpButton,
   UserButton,
   useUser,
 } from "@clerk/nextjs";
