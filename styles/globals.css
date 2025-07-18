@@ -9,7 +9,7 @@
 @import "@webtui/css/components/separator.css";
 @import "@webtui/css/components/spinner.css";
 
-@import '@webtui/theme-catppuccin';
+@import "@webtui/theme-catppuccin";
 
 * {
   box-sizing: border-box;
@@ -517,6 +517,34 @@ button[component="SignUpButton"] {
   border-radius: 0 !important;
   box-shadow: none !important;
   outline: none !important;
+  display: inline-block !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
+}
+
+/* Additional targeting for Clerk buttons that might have different attributes */
+button[data-clerk-sign-in],
+button[data-clerk-sign-up],
+button[class*="clerk-sign-in"],
+button[class*="clerk-sign-up"],
+button[class*="ClerkSignIn"],
+button[class*="ClerkSignUp"] {
+  background-color: var(--surface0) !important;
+  color: var(--text) !important;
+  border: 2px solid var(--blue) !important;
+  padding: 0.5rem 1rem !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-transform: none !important;
+  font-weight: normal !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: inline-block !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
 }
 
 button[component="SignInButton"]:hover,
@@ -534,13 +562,19 @@ button[component="SignUpButton"]:active {
 }
 
 /* Target SignUpButton specifically for success styling */
-button[component="SignUpButton"] {
+button[component="SignUpButton"],
+button[data-clerk-sign-up],
+button[class*="clerk-sign-up"],
+button[class*="ClerkSignUp"] {
   background-color: var(--surface0) !important;
   border-color: var(--green) !important;
   color: var(--green) !important;
 }
 
-button[component="SignUpButton"]:hover {
+button[component="SignUpButton"]:hover,
+button[data-clerk-sign-up]:hover,
+button[class*="clerk-sign-up"]:hover,
+button[class*="ClerkSignUp"]:hover {
   background-color: var(--green) !important;
   color: var(--surface0) !important;
 }
@@ -620,6 +654,107 @@ button[class*="Clerk"] {
   border-radius: 0 !important;
   box-shadow: none !important;
   outline: none !important;
+  display: inline-block !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure all buttons in the modal are visible */
+div[style*="position: fixed"] button {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-block !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
+}
+
+/* Specific styling for the auth modal overlay */
+.auth-modal-overlay button {
+  background-color: var(--surface0) !important;
+  color: var(--text) !important;
+  border: 2px solid var(--blue) !important;
+  padding: 0.5rem 1rem !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-transform: none !important;
+  font-weight: normal !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: inline-block !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.auth-modal-overlay button:hover {
+  background-color: var(--blue) !important;
+  color: var(--surface0) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Target the second button (SignUpButton) specifically */
+.auth-modal-overlay button:nth-child(2) {
+  border-color: var(--green) !important;
+  color: var(--green) !important;
+}
+
+.auth-modal-overlay button:nth-child(2):hover {
+  background-color: var(--green) !important;
+  color: var(--surface0) !important;
+}
+
+/* Ensure Clerk buttons are properly sized and visible */
+.auth-modal-overlay div > div {
+  display: inline-block !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
+}
+
+.auth-modal-overlay div > div > button {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Additional styling for the button containers */
+.auth-modal-overlay div > div {
+  background-color: var(--surface0) !important;
+  border: 2px solid var(--blue) !important;
+  padding: 0.5rem !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-block !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
+}
+
+.auth-modal-overlay div > div:hover {
+  background-color: var(--blue) !important;
+  color: var(--surface0) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Style the second button container (SignUp) */
+.auth-modal-overlay div > div:nth-child(2) {
+  border-color: var(--green) !important;
+}
+
+.auth-modal-overlay div > div:nth-child(2):hover {
+  background-color: var(--green) !important;
+  color: var(--surface0) !important;
 }
 
 /* Override any inline styles that Clerk might apply */
@@ -656,7 +791,13 @@ button[component="SignUpButton"][style*="border"] {
 
 /* Override any remaining Clerk default styles with maximum specificity */
 html body button[component="SignInButton"],
-html body button[component="SignUpButton"] {
+html body button[component="SignUpButton"],
+html body button[data-clerk-sign-in],
+html body button[data-clerk-sign-up],
+html body button[class*="clerk-sign-in"],
+html body button[class*="clerk-sign-up"],
+html body button[class*="ClerkSignIn"],
+html body button[class*="ClerkSignUp"] {
   background-color: var(--surface0) !important;
   color: var(--text) !important;
   border: 2px solid var(--blue) !important;
@@ -670,24 +811,53 @@ html body button[component="SignUpButton"] {
   border-radius: 0 !important;
   box-shadow: none !important;
   outline: none !important;
-  min-width: auto !important;
-  min-height: auto !important;
+  min-width: 120px !important;
+  min-height: 40px !important;
   line-height: normal !important;
   display: inline-block !important;
   text-decoration: none !important;
 }
 
-html body button[component="SignUpButton"] {
+html body button[component="SignUpButton"],
+html body button[data-clerk-sign-up],
+html body button[class*="clerk-sign-up"],
+html body button[class*="ClerkSignUp"] {
   border-color: var(--green) !important;
   color: var(--green) !important;
 }
 
-html body button[component="SignUpButton"]:hover {
+html body button[component="SignUpButton"]:hover,
+html body button[data-clerk-sign-up]:hover,
+html body button[class*="clerk-sign-up"]:hover,
+html body button[class*="ClerkSignUp"]:hover {
   background-color: var(--green) !important;
   color: var(--surface0) !important;
 }
 
-html body button[component="SignInButton"]:hover {
+html body button[component="SignInButton"]:hover,
+html body button[data-clerk-sign-in]:hover,
+html body button[class*="clerk-sign-in"]:hover,
+html body button[class*="ClerkSignIn"]:hover {
   background-color: var(--blue) !important;
   color: var(--surface0) !important;
+}
+
+/* Fix: Ensure text inside buttons remains visible on hover */
+.auth-modal-overlay button,
+.auth-modal-overlay div > div > button {
+  color: var(--text) !important;
+}
+
+.auth-modal-overlay button:hover,
+.auth-modal-overlay div > div > button:hover {
+  color: var(--surface0) !important;
+}
+
+/* Fix: Add spacing between the two auth modal buttons */
+.auth-modal-overlay .auth-modal-buttons {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+  min-height: 60px;
 }

@@ -19,6 +19,11 @@ import { pusherClient } from "../utils/pusherClient";
 
 export default function Home() {
   const { isSignedIn, user } = useUser();
+
+  // Debug: Log authentication state
+  useEffect(() => {
+    console.log("Auth state:", { isSignedIn, user: user?.id });
+  }, [isSignedIn, user]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -378,6 +383,7 @@ export default function Home() {
               justifyContent: "center",
               zIndex: 1000,
             }}
+            className="auth-modal-overlay"
           >
             <div
               style={{
@@ -395,15 +401,33 @@ export default function Home() {
               <p style={{ marginBottom: "2rem", color: "var(--text)" }}>
                 Sign in or create an account to start tracking your finances
               </p>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  justifyContent: "center",
-                }}
-              >
-                <SignInButton mode="modal" />
-                <SignUpButton mode="modal" />
+              <div className="auth-modal-buttons">
+                <div
+                  style={{
+                    minWidth: "120px",
+                    minHeight: "40px",
+                    border: "1px solid var(--blue)",
+                    padding: "0.5rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <SignInButton mode="modal">
+                    <span style={{ color: "var(--text)" }}>Sign In</span>
+                  </SignInButton>
+                </div>
+                <div
+                  style={{
+                    minWidth: "120px",
+                    minHeight: "40px",
+                    border: "1px solid var(--green)",
+                    padding: "0.5rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <SignUpButton mode="modal">
+                    <span style={{ color: "var(--green)" }}>Sign Up</span>
+                  </SignUpButton>
+                </div>
               </div>
             </div>
           </div>
